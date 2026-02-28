@@ -12,19 +12,33 @@ You will also need to increase Docker's 'Swap Memory':
 - Open Docker config file and set `SwapMiB` to `10000`.
 - Save Docker config file and restart Docker for new `SwapMiB` setting to take effect.
 
-To run Open Site Energy server version with Docker, enter:
+Before running a Docker install, you should customize Docker settings, eg. login details or location of `build` folder, by copying `.env-template` to `.env` and editing `.env`:
+
+```
+git clone https://github.com/opensiteenergy/opensiteenergy.git
+cd opensiteenergy 
+cp .env-template .env
+nano .env
+```
+
+To install and run a Docker version of Open Site Energy server, enter:
 
 ```
 ./server-docker.sh
 ```
 
-Then load `http://localhost:8000` in web browser (username: `admin`, password: `password`).
+Once the server application is running, load `http://localhost:8000` in web browser:
 
-To run Open Site Energy command line tool with Docker, enter:
+![Open Site Energy - Login](/images/opensiteenergy-admin-login.png)
+
+Enter default username: `admin`, password: `password` or your custom username/password if you have modified `.env`.
+
+To run Open Site Energy command line tool (non-server version) with Docker, enter instead:
 
 ```
 ./build-docker.sh [configuration]
 ```
+
 
 ## Native install
 
@@ -75,6 +89,8 @@ brew install cmake make geos git libpq libtiff libspatialite lua rapidjson shape
 xattr -cr /Applications/Chromium.app
 xattr -d com.apple.quarantine $(which chromedriver)
 ```
+
+*Note: `chromium` and `chromedriver` are needed to automate browser interaction when downloading some datasets.*
 
 Clone the Open Site Energy repository and copy `.env-template` to `.env`:
 

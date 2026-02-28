@@ -55,6 +55,7 @@ ENV PATH="/usr/src/opensiteenergy/venv/bin:$PATH"
 RUN pip3 install gdal==`gdal-config --version`
 RUN pip3 install -r requirements.txt
 RUN pip3 install git+https://github.com/hotosm/osm-export-tool-python --no-deps
+RUN pip3 install git+https://github.com/opensiteenergy/openlibrary.git
 
 
 # Set working directory and copy essential files into it

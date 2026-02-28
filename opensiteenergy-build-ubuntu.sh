@@ -249,8 +249,8 @@ sudo NEEDRESTART_MODE=a apt install libcurl4-openssl-dev libpixman-1-dev libpixm
 sudo NEEDRESTART_MODE=a apt install libc++-dev libc++abi-dev libpng-dev -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo NEEDRESTART_MODE=a apt install libgl1-mesa-dev libgl1-mesa-dri libjpeg-dev -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo NEEDRESTART_MODE=a apt install qgis qgis-plugin-grass -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo NEEDRESTART_MODE=a apt install chromium-browser chromium-chromedriver -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo NEEDRESTART_MODE=a apt install screen -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-
 sudo apt update -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 
 echo '********* STAGE 6: Finished installing general tools and required libraries **********' >> /usr/src/opensiteenergy/opensiteenergy.log
