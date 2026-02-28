@@ -1,0 +1,10 @@
+osm-boundaries:
+    types:
+      - polygons
+    select:
+      - name
+      - council_name
+      - boundary
+      - admin_level
+    where:
+      - (name IS NOT NULL) AND (boundary = 'administrative') AND (admin_level IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10'))

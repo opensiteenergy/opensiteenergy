@@ -1,0 +1,787 @@
+{% extends "base.html" %}
+
+{% block title %}
+Process monitor
+{% endblock title %}
+
+{% block headline %}
+Process monitor
+{% endblock headline %}
+
+{% block footer %}
+{% endblock footer %}
+{% block content %}
+
+    <style>
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            margin: 0; 
+            background: #ffffff; 
+            overflow: hidden; 
+        }
+        
+        #ui-overlay {
+            position: fixed; top: 100px; right: 40px; z-index: 10;
+            background: rgba(255, 255, 255, 0.9); padding: 15px;
+            height: auto;
+            background-color: #EEE;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(188, 188, 188, 1); width: 260px;
+        }
+
+        #active-node-list {
+            max-width: 260px;
+            width: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+
+        }
+
+        #network-container {
+            position: absolute; top: 0px;
+            height: 100%;
+        }
+
+        .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl {
+            padding-left: 0.5rem;
+            padding-right: 0rem;
+        }
+
+        #timer-container {
+            margin-top:15px; margin-bottom: 15px; padding: 6px; background: #FFF; 
+            color: black; border-radius: 10px; text-align: center;
+        }
+
+        #property-panel {
+            position: fixed; top: 0; right: 0; width: 500px; height: 100%; 
+            background: white; border-left: 1px solid #ccc; padding: 20px; 
+            overflow-y: auto; z-index: 1000; display: none; box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        }
+
+        #console-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 400px;
+            background: #1e1e1e; 
+            font-family: 'Consolas', monospace;
+            z-index: 9999;
+            padding: 10px; 
+            overflow-x: hidden; 
+            overflow-y: auto; 
+            display: none; 
+            z-index: 1500;
+            border-top: 4px solid #007bff;             
+            box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.4);            
+            display: none;
+            flex-direction: column;
+        }
+
+        #timer-val {
+            font-size: 1.8rem; 
+            font-weight: 700;
+            font-family: 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+            letter-spacing: 0px;
+            color: #2c3e50;
+        }
+
+        .tool-btn-circle {
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 20px;
+            border: 0px solid #ccc;
+            background: #fff;
+            width: 30px;
+            height: 30px;
+            align-content: center;
+            vertical-align: middle;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .log-line { font-size: 0.7rem; margin-bottom: 0px; border-bottom: 1px solid #1e1e1e; white-space: pre-wrap; }
+        .log-ts { color: #858585; margin-right: 10px; }
+        .btn-console { background: #34495e !important; color: white !important; border: none !important; }
+
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.85rem; }
+
+        .dot { 
+            height: 40px; 
+            width: 40px; 
+            border-radius: 50%; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px; 
+            color: white; 
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .count-val { font-weight: bold; margin-left: 4px; color: #2c3e50; }
+
+        pre { background: #f8f8f8; padding: 10px; border-radius: 4px; font-size: 0.75rem; white-space: pre-wrap; }
+        button:hover { background: #f0f0f0; }
+
+        div.vis-network div.vis-tooltip {
+            background-color: #2c3e50;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-size: 14px;
+            padding: 0; 
+            border-radius: 6px;
+            border: 1px solid #1a252f;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        .tooltip-inner {
+            padding: 10px;
+            background-color: rgba(30, 30, 30, 0.95);
+            color: white;
+            border-left: 4px solid; 
+            border-radius: 4px;
+            font-family: sans-serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: left;            
+            min-width: 150px;
+            max-width: none !important; 
+            display: inline-block;
+        }
+
+        .tooltip-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap; 
+            font-size: 1rem;
+        }         
+
+        .loading-overlay {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease; 
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #2ecc71; 
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    </style>
+
+<div class="row" style="height:100%;">
+
+{% raw %}
+
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top:20px;">Starting data pipeline...</p>
+    </div>
+
+    <div id="ui-overlay">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin:0; font-size: 1.1rem;">Processing Monitor</h2>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="tool-btn-circle" onclick="centerView()" title="Center View">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+                <button class="tool-btn-circle" onclick="toggleConsole()" title="Toggle Console">
+                    <i class="fas fa-terminal"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="timer-container">
+            <div style="font-size: 0.65rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px;margin-bottom:3px;">Elapsed Time</div>
+            <div id="timer-val" style="font-size: 1.6rem; font-weight: bold;">00:00</div>
+            <div id="total-time" style="font-size: 0.75rem; color: #0b7a39; margin-top: 4px; display: none; font-weight: bold;">Final: <span></span></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item"><span id="count-processed" class="dot" style="background: #0b7a39;"></span> <span style="margin-left:6px;font-weight:800;color:black;">Processed</span></div>
+            <div class="legend-item"><span id="count-processing" class="dot" style="background: #FFA500;color: black"></span> <span style="margin-left:6px;font-weight:800;color:black;">Processing</span></div>
+            <div class="legend-item"><span id="count-unprocessed" class="dot" style="background: #FEE245;color: black;"></span> <span style="margin-left:6px;font-weight:800;color:black;">Unprocessed</span></div>
+            <div class="legend-item"><span id="count-failed" class="dot" style="background: #ec0a0a;"></span> <span style="margin-left:6px;font-weight:800;color:black;">Failed</span></div>
+        </div>
+
+        <div id="processing-monitor">
+            <h4 style="margin-top: 20px; margin-bottom: 5px;font-size: 0.9rem;width:100%;">Active Processes</h4>
+            <div id="active-node-list">
+                <p style="color: #888; font-style: italic;">No active nodes...</p>
+            </div>
+        </div>
+
+        <div id="last-sync" style="font-size: 0.7rem; color: #888; margin-top: 10px; margin-bottom: 0px;">Waiting for data...</div>
+
+    </div>
+
+
+    <div id="property-panel">
+        <button style="width: auto; float: right;border:0px;" onclick="document.getElementById('property-panel').style.display='none'">×</button>
+        <h3 id="prop-title">Node Metadata</h3>
+        <pre id="prop-content"></pre>
+    </div>
+
+    <div id="network-container">
+    </div>
+
+    <div id="console-panel">
+        <div id="log-content"></div>
+    </div>
+
+    <div id="button-commandline-copy">
+
+    </div>
+
+    <script type="text/javascript">
+
+        const statusColors = {
+            "processed": "#0b7a39",
+            "processing": "#FFA500",
+            "unprocessed": "#FEE245",
+            "failed": "#ec0a0a"
+        };
+
+        const options = {
+            nodes: 
+            { 
+                color: 
+                {
+                    highlight: 
+                    {
+                        background: "inherit", 
+                        border: "inherit"
+                    },
+                    hover: 
+                    {
+                        background: "#FFFFFF"
+                    }
+                },
+                shape: 'dot', 
+                size: 300, 
+                font: 
+                { 
+                    multi: true
+                },
+                widthConstraint: 
+                {
+                    maximum: 1000
+                } 
+            },
+            edges: 
+            { 
+                smooth: false, 
+                width: 2, 
+                color: 
+                { 
+                    color: '#D3D3D3', 
+                    highlight: '#848484', 
+                    hover: '#848484' 
+                },
+                 arrows: 
+                 { 
+                    to: 
+                    { 
+                        enabled: true, 
+                        scaleFactor: 20 
+                    } 
+                } 
+            },
+            layout: 
+            { 
+                hierarchical: 
+                { 
+                    enabled: true, 
+                    direction: "UD", 
+                    sortMethod: "directed", 
+                    levelSeparation: 3000, 
+                    nodeSpacing: 900, 
+                    treeSpacing: 800 
+                } 
+            },
+            physics: 
+            { 
+                enabled: false 
+            },
+            interaction: 
+            { 
+                dragNodes: true, 
+                hover: true,
+                tooltipDelay: 100
+            }
+        };
+
+        let isGraphInitialized = false;
+        let isTerminalInitialized = false;
+        let lastScrollTop = null;
+        let colorStep = 0;
+        let serverStartTime = null;
+        let serverStopTime = null;
+        let finalDuration = null;
+        let lastLogIndex = 0;
+        let isPipelineActive = false;
+        let isPipelineFinished = false;
+
+        // Set up basic vis network ready to be populated via JSON through refreshPipeline
+        const nodes         = new vis.DataSet([]);
+        const edges         = new vis.DataSet([]);
+        const container     = document.getElementById('network-container');
+        const network       = new vis.Network(container, { nodes, edges }, options);
+        network.on("click", (params) => {
+            if (params.nodes.length > 0) {
+                const node = nodes.get(params.nodes[0]);
+                const metadata = { ...node.raw }; delete metadata.children;
+                document.getElementById('property-panel').style.display = 'block';
+                document.getElementById('prop-title').innerText = node.label;
+                document.getElementById('prop-content').innerText = JSON.stringify(metadata, null, 2);
+            }
+        });
+
+        setTimeout(refreshPipeline, 100);
+        setInterval(refreshPipeline, 5000);
+        setInterval(pulseProcessingNodes, 500);
+        setInterval(updateGlobalTimer, 1000);
+
+        function hideLoadingSpinner() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay && !overlay.classList.contains('hidden')) {
+                overlay.classList.add('hidden');
+                // Optional: Remove from DOM entirely after fade transition
+                setTimeout(() => overlay.style.display = 'none', 500);
+            }
+        }
+
+        function centerView() {
+            if (network) network.fit()
+        }
+
+        function toggleConsole() {
+            const panel = document.getElementById('console-panel');
+            const isHidden = window.getComputedStyle(panel).display === 'none';
+            panel.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                setTimeout(() => { panel.scrollTop = panel.scrollHeight; }, 10);
+            }
+        }
+
+        function lerpColor(color1, color2, factor) {
+            const r1 = parseInt(color1.substring(1, 3), 16), g1 = parseInt(color1.substring(3, 5), 16), b1 = parseInt(color1.substring(5, 7), 16);
+            const r2 = parseInt(color2.substring(1, 3), 16), g2 = parseInt(color2.substring(3, 5), 16), b2 = parseInt(color2.substring(5, 7), 16);
+            const r = Math.round(r1 + factor * (r2 - r1)), g = Math.round(g1 + factor * (g2 - g1)), b = Math.round(b1 + factor * (b2 - b1));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function pulseProcessingNodes() {
+            colorStep += 0.5;
+            const factor = (Math.sin(colorStep) + 1) / 2; 
+            const currentColor = lerpColor("#FFA500", "#FFFFFF", factor);
+            const processingNodes = nodes.get({ filter: (item) => item.raw && item.raw.status === 'processing' });
+            const updates = processingNodes.map(node => ({ id: node.id, color: { background: currentColor, border: "#BBB" } }));
+            if (updates.length > 0) nodes.update(updates);
+        }
+
+        function formatSeconds(s) {
+            const hrs = Math.floor(s / 3600), mins = Math.floor((s % 3600) / 60), secs = s % 60;
+            return (hrs > 0 ? hrs + ":" : "") + mins.toString().padStart(2, '0') + ":" + secs.toString().padStart(2, '0');
+        }
+
+        function updateGlobalTimer() {
+            if (!serverStartTime) return;
+
+            if (serverStopTime) {
+                finalDuration = Math.max(0, Math.floor((serverStopTime - serverStartTime) / 1000));
+
+                const formatted = formatSeconds(finalDuration);
+                const timerElement = document.getElementById('timer-val');
+                
+                timerElement.innerText = formatted;
+                timerElement.style.color = "#0b7a39";
+                timerElement.style.fontWeight = '800';
+                
+                document.getElementById('total-time').style.display = 'block';
+                document.getElementById('total-time').querySelector('span').innerText = formatted;
+                return; 
+            }
+            
+            let displaySeconds = finalDuration || Math.max(0, Math.floor((Date.now() - serverStartTime) / 1000));
+            document.getElementById('timer-val').innerText = formatSeconds(displaySeconds);
+        }
+
+        function stripAnsi(text) {
+            return text.replace(/\u001b\[[0-9;]*[mK]/g, '');
+        }
+
+        function createNodePopup(node) {
+            const color = statusColors[node.status] || "#efefef";
+            
+            // Create an HTML title with a colored border
+            const titleElement = document.createElement("div");
+            titleElement.className = "tooltip-inner";
+            titleElement.style.borderLeftColor = color;
+
+            let durationText = "";
+            if (node.log && Array.isArray(node.log)) {
+                // Find the dict that has the 'duration' key
+                const durationEntry = node.log.find(entry => "duration" in entry);
+                if (durationEntry) {
+                    const cleanDuration = durationEntry.duration.split('.')[0];
+                    durationText = `<div style="padding-top: 8px;margin-top: 8px; border-top: 1px solid #444; pt-5px;">
+                                        <span style="color: #18bc9c; font-weight: bold;">Duration:</span> ${cleanDuration}
+                                    </div>`;
+                }
+            }
+
+            titleElement.innerHTML = `
+                <div style="font-weight:bold; margin-bottom: 5px;width:auto;">${node.title || node.name}</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">
+                    Type: ${node.node_type}<br>
+                    Status: <span style="color:${color}; font-weight:bold;">${node.status.toUpperCase()}</span>
+                    ${durationText}
+                </div>
+            `;
+
+            return titleElement;
+        }
+
+        function parsePipelineData(node, nodesArray, edgesArray) {
+            const color = statusColors[node.status] || "#efefef";
+
+            nodesArray.push({
+                id: node.urn,
+                label: node.title.replaceAll(' - ', '\n'),
+                title: createNodePopup(node),
+                color: { background: color, border: "#BBB" },
+                font: { size: 80, face: 'Arial Narrow' },
+                raw: node 
+            });
+            
+            if (node.children) {
+                node.children.forEach(child => {
+                    edgesArray.push({ from: node.urn, to: child.urn, arrows: 'to', color: { color: '#AAA' }, scaleFactor: 20});
+                    parsePipelineData(child, nodesArray, edgesArray);
+                });
+            }
+        }
+
+        function getActiveNodeTimers(nodes) {
+            const now = new Date();
+            const uniqueNodes = new Map();
+
+            nodes
+                .filter(node => node.raw.status === 'processing')
+                .forEach(node => {
+                    const urn = node.raw.global_urn || node.raw.urn;
+                    
+                    if (!uniqueNodes.has(urn)) {
+                        const startEntry = [...node.raw.log].reverse().find(entry => entry.hasOwnProperty('started'));
+                        
+                        let elapsedStr = "Starting...";
+                        let seconds = 0;
+
+                        if (startEntry) {
+                            const startTime = new Date(startEntry.started);
+                            const diff = Math.floor((now - startTime) / 1000);
+                            const h = Math.floor(diff / 3600);
+                            const m = Math.floor((diff % 3600) / 60);
+                            const s = diff % 60;
+                            elapsedStr = [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+                            seconds = diff;
+                        }
+
+                        uniqueNodes.set(urn, {
+                            id: node.raw.urn,
+                            title: node.raw.title,
+                            elapsed: elapsedStr,
+                            rawSeconds: seconds
+                        });
+                    }
+                });
+
+            // Convert Map back to array and sort
+            return Array.from(uniqueNodes.values())
+                .sort((a, b) => b.rawSeconds - a.rawSeconds);
+        }
+
+        function updateMonitorUI(nodes) {
+            const container = document.getElementById('active-node-list');
+            const activeNodes = getActiveNodeTimers(nodes);
+
+            if (activeNodes.length === 0) {
+                container.innerHTML = '<p style="color: #888; font-style: italic;">No active nodes...</p>';
+                document.getElementById('processing-monitor').style.display = 'none';
+                return;
+            } else {
+                document.getElementById('processing-monitor').style.display = 'block';
+            }
+
+            container.innerHTML = activeNodes.map(node => `
+            <a href="#" style="text-decoration:none;" onclick="zoomToNode('${node.id}'); return false;">
+                <div style="max-width: 150px;display: flex; justify-content: space-between; align-items: top; border-bottom: 0.5px solid #DDD; padding: 4px 0;font-size: 0.9em;">
+                    <div>
+                        <div style="margin-right:20px;width:130px;max-width:150px!important;overflow:hidden;">${node.title}</div>
+                    </div>
+                    <div style="font-family: monospace;"><b>${node.elapsed}</b></div>
+                </div>
+            </a>
+            `).join('');
+        }
+
+        function zoomToNode(nodeId) {
+            // 1. Try the direct DataSet lookup first
+            let target = nodes.get(nodeId);
+
+            // 2. If null, crawl every node in the DataSet to find a URN match
+            if (!target) {
+                const allData = nodes.get();
+                target = allData.find(n => 
+                    n.id == nodeId || 
+                    (n.raw && n.raw.urn == nodeId) || 
+                    (n.raw && n.raw.global_urn == nodeId)
+                );
+            }
+
+            if (target) {
+                // We found it! Use the actual ID vis-network recognizes
+                const actualId = target.id;
+                
+                network.focus(actualId, {
+                    scale: 0.2,
+                    animation: { duration: 1000, easingFunction: "easeInOutQuad" }
+                });
+
+            } else {
+                // This will tell us EXACTLY what's wrong in the console
+                console.error("ZOOM FAIL: Requested ID:", nodeId);
+                console.log("FIRST NODE IN DATASET:", nodes.get()[0]);
+            }
+        }
+
+        function getAnsiColor(text) {
+            // Standard ANSI to Hex mapping (Bright variants for dark background)
+            const colorMap = {
+                '30': '#4f4f4f', // Black (Grey)
+                '31': '#FF0000', // Red
+                '32': '#00FF00', // Green
+                '33': '#FFFF00', // Yellow
+                '34': '#0000FF', // Blue
+                '35': '#FF00FF', // Magenta
+                '36': '#00FFFF', // Cyan
+                '37': '#ffffff', // White
+                '90': '#858585', // Bright Black
+                '91': '#ff8787', // Bright Red
+                '92': '#b2f2bb'  // Bright Green
+            };
+
+            const match = text.match(/\u001b\[(\d+)(?:;\d+)*m/);
+            if (match && colorMap[match[1]]) {
+                return colorMap[match[1]];
+            }
+            return null;
+        }
+
+        function flattenPipelineData(rawData) {
+            // Flattens nested hierarchy of nodes
+            const flatMap = {};
+
+            function recurse(node) {
+                if (!node) return;
+                
+                if (node.urn) {
+                    flatMap[node.urn] = node;
+                }
+
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach(child => recurse(child));
+                }
+            }
+
+            if (rawData.children && rawData.children.length > 0) {
+                rawData.children.forEach(branch => recurse(branch));
+            } else if (rawData.name) {
+                recurse(rawData);
+            }
+
+            return flatMap;
+        }
+
+        function initGraph(rawData) {
+            const tempNodes = [];
+            const tempEdges = [];
+
+            if (rawData.children && rawData.children.length > 0) {
+                rawData.children.forEach(branch => parsePipelineData(branch, tempNodes, tempEdges));
+            } else if (rawData.name) {
+                parsePipelineData(rawData, tempNodes, tempEdges);
+            }
+
+            nodes.add(tempNodes);
+            edges.add(tempEdges);
+
+            isGraphInitialized = true;
+
+        }
+        
+        function updateGraph(rawData) {
+            const newDataMap = flattenPipelineData(rawData);
+            const updates = [];
+
+            nodes.get().forEach(existingNode => {
+                const newNodeData = newDataMap[existingNode.id];
+
+                if (newNodeData && existingNode.raw.status !== newNodeData.status) {
+                    
+                    const newColor = statusColors[newNodeData.status] || "#efefef";
+                    const newPopup = createNodePopup(newNodeData);
+
+                    updates.push({
+                        id: existingNode.id,
+                        color: { background: newColor, border: "#BBB" },
+                        title: newPopup,
+                        raw: newNodeData 
+                    });
+                }
+            });
+
+            if (updates.length > 0) {
+                nodes.update(updates);
+            }
+
+            const allNodes = nodes.get();
+            const counts = { processed: 0, processing: 0, unprocessed: 0, failed: 0 };
+            allNodes.forEach(n => { if(counts.hasOwnProperty(n.raw.status)) counts[n.raw.status]++; });
+            updateMonitorUI(allNodes);
+            
+            document.getElementById('count-processed').innerText = `${counts.processed}`;
+            document.getElementById('count-processing').innerText = `${counts.processing}`;
+            document.getElementById('count-unprocessed').innerText = `${counts.unprocessed}`;
+            document.getElementById('count-failed').innerText = `${counts.failed}`;
+
+            document.getElementById('last-sync').innerText = "Last Sync: " + new Date().toLocaleTimeString();
+
+
+            if (rawData.logs && rawData.logs.length > 0) {
+                const logContent = document.getElementById('log-content');
+                const panel = document.getElementById('console-panel');
+                const isAtBottom = (panel.scrollHeight - panel.scrollTop - panel.clientHeight) < 20;
+
+                rawData.logs.forEach(log => {
+                    const line = document.createElement('div');
+                    line.className = 'log-line';
+                    const detectAnsiColor = getAnsiColor(log.msg);
+                    const cleanMsg = stripAnsi(log.msg);
+                    let msgColor = "#d4d4d4";
+                    if (detectAnsiColor) msgColor = detectAnsiColor;
+                    if (log.msg.includes("OpenSiteDownloader")) msgColor = "#d88bf0";
+                    if (log.msg.includes("OpenSiteSpatial")) msgColor = "#ce9178";
+                    if (log.msg.includes("OpenSiteQueue")) msgColor = "#a2d3e8";
+                    if (log.msg.includes("[amalgamate]")) msgColor = "#569cd6";
+                    if (log.msg.includes("[postprocess]")) msgColor = "#2d9c33";
+                    if (log.msg.includes("OpenSiteOutput")) msgColor = "#32ba56";
+                    if (log.msg.includes("OpenSitePostGIS")) msgColor = "#a834eb";
+                    if (log.msg.includes("OpenSiteRunner")) msgColor = "#5e5adb";
+                    if (log.msg.includes("ERROR")) msgColor = "#de0d0d";
+
+                    line.innerHTML = `<span class="log-ts">${log.time}</span><span style="color:${msgColor}">${cleanMsg}</span>`;
+                    logContent.appendChild(line);
+                });
+                lastLogIndex = rawData.next_index;
+
+                if (!isTerminalInitialized || isAtBottom) {
+                    if (window.getComputedStyle(panel).display !== 'none') {
+                        panel.scrollTop = panel.scrollHeight;
+                    }
+                }
+
+                isTerminalInitialized = true;
+
+            }
+
+        }
+
+        function setPipelineActive() {
+            if (!isPipelineActive) {
+                isPipelineActive = true;
+                hideLoadingSpinner();
+            }
+        }
+
+        function setPipelineFinished() {
+            if (!isPipelineFinished) {
+                document.getElementById('build-stop').style.display = 'none';
+                document.getElementById('build-setup').style.display = 'inline-block';
+                isPipelineFinished = true;
+            }
+        }
+
+        async function refreshPipeline() {
+
+            const response = await fetch(`nodes?last_index=${lastLogIndex}`);
+            const rawData = await response.json();
+            
+            if (rawData.process_started) serverStartTime = new Date(rawData.process_started * 1000).getTime();
+            if (rawData.process_stopped) serverStopTime = new Date(rawData.process_stopped * 1000).getTime();
+
+            if (serverStartTime) setPipelineActive();
+            if (serverStopTime) setPipelineFinished();
+
+            if (isPipelineActive) {
+                if (!isGraphInitialized) {
+                    initGraph(rawData);
+                    setTimeout(() => network.fit(), 500);
+                } else {
+                    updateGraph(rawData);
+                }
+            }
+        }
+ 
+    </script>
+
+{% endraw %}
+
+    <div class="col-lg-12" style="position:fixed; bottom:10px">
+        <a href="/buildstop" id="build-stop" data-toggle="modal" data-target="#stopProcessingModal" class="btn btn-lg btn-danger btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fa fa-stop-circle"></i>
+            </span>
+            <span class="text">Stop processing</span>
+        </a>
+
+        <a href="/build" id="build-setup" class="btn btn-lg btn-action btn-icon-split" style="display:none;">
+            <span class="icon text-white-50">
+                <i class="fa fa-play-circle"></i>
+            </span>
+            <span class="text">Return to build setup</span>
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock content %}

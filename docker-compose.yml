@@ -1,0 +1,66 @@
+# opensiteenergy docker-compose.yml
+
+services:
+
+  opensiteenergy-postgis:
+    container_name: opensiteenergy-postgis
+    image: kartoza/postgis:18-3.6
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      TZ: "Europe/London"
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD 
+      PGHOST: "/var/run/postgresql"
+      PGPORT: "5432"
+    hostname: opensiteenergy-postgis
+    volumes:
+      - ${BUILD_FOLDER:-./build}/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  opensiteenergy-tileserver:
+    container_name: opensiteenergy-tileserver
+    image: maptiler/tileserver-gl:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${BUILD_FOLDER:-./build}/tileserver-live:/data
+    command: ["--config", "/data/config.json"]
+
+  opensiteenergy-build:
+    container_name: opensiteenergy-build
+    ports:
+      - "8000:8000"
+    volumes:
+      # To use different local folder for Docker, change './build' before ':'
+      - ${BUILD_FOLDER:-./build}:/usr/src/opensiteenergy/build
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: "Europe/London"
+      POSTGRES_HOST: opensiteenergy-postgis
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD 
+      BUILD_FOLDER: build/
+      TILESERVER_URL: "http://localhost:8080"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password}
+      QGIS_PREFIX_PATH: "/usr/"
+      QGIS_PYTHON_PATH: "/usr/bin/python3"
+      QGIS_PROJ_DATA: "/usr/share/proj/"
+      QGIS_PROJ_LIB: $QGIS_PROJ_DATA
+    build:
+      context: .
+      dockerfile: opensiteenergy-build.dockerfile
+    depends_on:
+      opensiteenergy-postgis:
+        condition: service_healthy
+    stdin_open: true
+    tty: true

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}
+Output files
+{% endblock title %}
+
+{% block headline %}
+Output files
+{% endblock headline %}
+
+{% block content %}
+
+<style>
+
+div.dataTables_wrapper div.dataTables_length select {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.dataTables_filter {
+    text-align: right;
+}
+
+/* Ensure the search input behaves nicely inside the label */
+.dataTables_filter label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Add a little breathing room to the search input */
+.dataTables_filter input {
+    margin-left: 0.5rem;
+    display: inline-block;
+    width: auto;
+}
+</style>
+
+<script>
+/**
+ * Global variable to hold our polling timer
+ */
+let zipPollInterval;
+
+/**
+ * Triggers the background zipping process
+ * @param {string} type - e.g., 'all', 'gpkg', 'geojson', 'shp', 'qgis'
+ */
+function startZipTask(type) {
+    // 1. Reset and show the progress UI
+    $('#progress-container').fadeIn();
+    updateProgressBar(0, 0, 0, "Initializing...");
+
+    // 2. Call the FastAPI endpoint to start the background task
+    // Note: ensure your routes are named exactly /downloadall, /downloadgpkg, etc.
+    const endpoint = `/download${type}`;
+    
+    $.get(endpoint, function(data) {
+        console.log("Task started for type: " + type);
+        
+        // 3. Clear any existing intervals and start polling every 800ms
+        if (zipPollInterval) clearInterval(zipPollInterval);
+        zipPollInterval = setInterval(pollZipStatus, 800);
+        
+    }).fail(function(err) {
+        console.error("Failed to start task:", err);
+        alert("Could not start the download process. Please check if you are logged in.");
+        $('#progress-container').hide();
+    });
+}
+
+/**
+ * Checks the server for progress updates
+ */
+function pollZipStatus() {
+    $.get('/download/progress', function(data) {
+        // Data structure from FastAPI: {"current": X, "total": Y, "status": "..."}
+        
+        if (data.status === "processing") {
+            let percent = 0;
+            if (data.total > 0) {
+                percent = Math.round((data.current / data.total) * 100);
+            }
+            const typeLabel = data.file_type || "files";
+            const statusText = `Packaging ${typeLabel}: ${data.current} of ${data.total} files...`;
+            updateProgressBar(percent, data.current, data.total, statusText);
+        } 
+        
+        else if (data.status === "complete") {
+            // Stop polling
+            clearInterval(zipPollInterval);
+            
+            updateProgressBar(100, data.total, data.total, "Download starting...");
+            
+            // 4. Trigger the final file download
+            window.location.href = '/download/get-file';
+            
+            // Hide the progress bar after 5 seconds of "success"
+            setTimeout(() => {
+                $('#progress-container').fadeOut();
+            }, 5000);
+        }
+        
+        else if (data.status === "failed") {
+            clearInterval(zipPollInterval);
+            alert("The server encountered an error while zipping your files.");
+            $('#progress-container').hide();
+        }
+    });
+}
+
+/**
+ * Updates the Bootstrap Progress Bar elements
+ */
+function updateProgressBar(percent, current, total, customText = null, type = null) {
+    // Update the bar width
+    $('#progress-bar').css('width', percent + '%').attr('aria-valuenow', percent);
+    
+    // Update the percentage text
+    $('#progress-percent').text(percent + '%');
+    
+    // Update the sub-text (e.g. "Adding file 5 of 20")
+    let statusText = customText || `Processing ${type} file ${current} of ${total}...`;
+    $('#progress-status').text(statusText);
+}
+</script>
+
+<div id="progress-container" style="display:none;" class="mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div id="progress-status" class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        Preparing archive...
+                    </div>
+                    
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-auto">
+                            <div id="progress-percent" class="h5 mb-0 mr-3 font-weight-bold text-gray-800">0%</div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="progress progress-sm mr-2">
+                                <div id="progress-bar" 
+                                     class="progress-bar bg-info progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: 0%" 
+                                     aria-valuenow="0" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-auto">
+                    <i class="fas fa-file-archive fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-lg-12">
+
+        <div class="mb-2">
+            <button onclick="startZipTask('all')" class="btn text-sm btn-success mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text"><b>Download all</b></span>
+            </button>
+
+            <button onclick="startZipTask('gpkg')" class="btn text-sm btn-info mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text">All GPKG</span>
+            </button>
+
+            <button onclick="startZipTask('geojson')" class="btn text-sm btn-info mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text">All GeoJSON</span>
+            </button>
+
+            <button onclick="startZipTask('shp')" class="btn text-sm btn-info mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text">All SHP</span>
+            </button>
+
+            <button onclick="startZipTask('mbtiles')" class="btn text-sm btn-info mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text">All mbtiles</span>
+            </button>
+
+            {% if qgis == True %}
+            <button onclick="startZipTask('qgis')" class="btn text-sm btn-primary mb-1 btn-icon-split">
+                <span class="icon">
+                    <i class="fa fa-download"></i>
+                </span>
+                <span class="text">QGIS file + attachments</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Individual files</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>File name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {%- for file in files %}
+                            <tr>
+                                <td>
+                                    <a href="{{ file['url'] }}">
+                                    <button class="btn ml-0 text-sm">
+                                        <span class="icon">
+                                            <i class="fa fa-download"></i>
+                                        </span>
+                                        <span class="ml-2">{{ file['name'] -}}</span>
+                                    </button>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock content %}

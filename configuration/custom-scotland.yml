@@ -1,0 +1,14 @@
+osm:
+  https://download.geofabrik.de/europe/united-kingdom/scotland-latest.osm.pbf
+
+clipping:
+  - scotland
+
+areas:
+  - scotland
+  - uk
+
+
+
+
+

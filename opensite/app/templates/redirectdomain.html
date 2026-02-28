@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block meta %}
+<meta http-equiv="refresh" content="5; url={{ redirect_url }}" />
+{%endblock meta %}
+
+{% block title %}
+Setting domain...
+{% endblock title %}
+
+{% block headline %}
+Setting domain...
+{% endblock headline %}
+
+{% block content %}
+
+<form action="/processdomain" method="POST" enctype="application/x-www-form-urlencoded" class="d-sm-inline-block form-inline mr-auto my-2 my-md-0 mw-100">
+
+    <div class="row">
+
+        <div class="col-lg-12">
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 text-white bg-primary">
+                    <h6 class="m-0 font-weight-bold">SSL certificate status for <b>{{ domain }}</b></h6>
+                </div>
+                <div class="card-body">
+                    {% if certbot_result == '' %}
+                        <pre>Waiting for certbot to finish...</pre>
+                    {% else %}
+                        <pre style="white-space:break-spaces;">{{ certbot_result }}</pre>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+
+        </div>
+    </div>
+
+</form>
+
+{% endblock content %}
+

@@ -1,0 +1,65 @@
+tip-height:
+  130.0
+
+osm:
+  https://download.geofabrik.de/europe/united-kingdom/england-latest.osm.pbf
+
+clipping:
+  - england
+  - wales
+  
+areas:
+  - england
+  - wales
+  - uk
+
+structure:
+  ecology-and-wildlife:
+    - ancient-woodlands--england
+    - ancient-woodlands--scotland
+    - ancient-woodlands--wales
+    - sites-of-special-scientific-interest--england
+  landscape-and-visual-impacts:
+    - national-parks--england
+  other-technical-constraints: 
+    - power-lines--uk
+  separation-distance-from-residential:
+    - separation-distance-from-residential--uk
+
+buffers:
+  ancient-woodlands--england:
+    1175.7
+  national-parks--england:
+    2.1 * height-to-tip
+
+style:
+  aviation-and-exclusion-areas:
+    color:
+      pink
+  ecology-and-wildlife:
+    color:
+      cyan
+  environmental-data:
+    color:
+      orange
+  heritage-impacts:
+    color:
+      mauve
+  landscape-and-visual-impacts:
+    color:
+      brown
+  other-technical-constraints: 
+    color:
+      lightblue
+  separation-distance-from-residential:
+    color:
+      purple
+
+
+
+
+
+
+
+
+

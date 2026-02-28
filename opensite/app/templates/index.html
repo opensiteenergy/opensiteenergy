@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Open Site Energy - Site constraints</title>
+
+<!-- ********************************************************************* -->
+<!-- ********************************************************************* -->
+<!-- ******** Simple HTML file to load open site constraint layers ******* -->
+<!-- ********************************************************************* -->
+<!-- Based on: https://docs.mapbox.com/mapbox-gl-js/example/toggle-layers/ -->
+<!-- ********************************************************************* -->
+<!-- ********************************************************************* -->
+
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css' />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=visibility" />
+<script src='https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js'></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+
+body {
+    font-family: 'Open Sans', sans-serif;
+}
+
+#info {
+    position: absolute;
+    font-size: 12px;
+    margin-left: calc((100vw - 320px)/2);;
+    bottom: 60px;
+    width: 300px;
+    z-index: 1000;
+    text-align: center;
+    padding: 10px;
+    background: #ffffffcf;
+    border-radius: 20px;
+}
+
+div.spacer {
+    height: 3px;
+}
+
+div.link_container {
+    background: #fff;
+    opacity: 0.9;
+    border-bottom: 0.1px solid rgba(255, 255, 255, 0.114);
+}
+
+@media only screen and (max-width: 600px) {
+    #menu {
+        top: 0px;
+        left: 0px;
+        max-width: 120px;
+    }
+    #menu a {
+        font-size: 8px;
+        padding: 3px 4px 3px 4px;
+    }
+    div.spacer {
+        height: 0px;
+    }
+}
+
+#layers-panel {
+    font-family: Inter Tight,sans-serif;
+    width: 340px;
+    background: #fff;
+    padding: 7px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: absolute;
+    z-index: 1;
+    top: 10px;
+    left: 10px;
+    text-overflow: ellipsis;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto; 
+    overflow-x: hidden;
+    z-index: 1000;
+}
+
+.panel-header h3 { margin: 0; display: inline-block; font-size: 1rem; }
+.panel-header p { color: #666; font-size: 0.9rem; margin: 10px 0; }
+
+.layer-row {
+    display: flex;
+    align-items: center;
+    padding: 0px 0;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.layer-item.level-1 { font-weight: bold; margin-top: 2px; }
+.layer-item.level-2 { font-weight: normal; color: #444; }
+
+.layer-row label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+    cursor: pointer;
+    user-select: none;
+}
+
+.label-text {
+    width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+input[type="checkbox"] {
+    margin-right: 8px;
+    width: 10px;
+    height: 10px;
+    cursor: pointer;
+}
+
+.children-container { margin-bottom: 5px; }
+
+.master-hidden {
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
+
+.master-hidden input, 
+.master-hidden label {
+    cursor: not-allowed;
+}
+
+.chevron {
+    flex-shrink: 0; 
+    padding-top: 4px; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 0.8rem;
+    user-select: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+.chevron:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 7px; 
+}
+
+.eye-icon {
+    flex-shrink: 0; 
+    padding-top: 4px;
+    padding-left: 2px; 
+}
+
+.eye-icon.is-hidden {
+    opacity: 0.3 !important;
+}
+
+.header-title {
+    flex-grow: 1;
+    margin: 0;
+    line-height: 1.4;
+    text-align: left;
+    word-wrap: break-word; 
+}
+
+.branch-selector-container {
+    width: 100%;
+    padding: 10px 0px 10px 0px;
+    box-sizing: border-box; 
+    background: #fdfdfd;
+}
+
+#branch-dropdown {
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 4px 8px;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 0.7rem;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    max-width: 100%; 
+    box-sizing: border-box;
+}
+
+#branch-dropdown:focus {
+    outline: none;
+    border-color: #007cbf;
+    box-shadow: 0 0 0 2px rgba(0, 124, 191, 0.1);
+}
+
+</style>
+
+<div id="info" style="display:none;"></div>
+<nav id="layers-panel" style="display:none;">
+    <div id="layers-panel-content"></div>
+</nav>
+<div id="map"></div>
+
+<script type="module">
+
+// Loads crucial 'opensiteenergy-data.json' json file
+async function loadConfig() {
+    try {
+        const response = await fetch('./opensiteenergy-data.json');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Could not load JSON file:", error);
+    }
+}
+
+function activateBranch(config, branchcode) {
+
+    const activebranch = config.filter(item => item.code === branchcode)[0];
+
+    const info = document.getElementById('info');
+    info.innerHTML = activebranch['title'];
+    info.style = "display:block;"
+
+    const container = document.getElementById('layers-panel-content');
+    container.innerHTML = ''; 
+    var hiddenbranches = allbranches.filter(code => code !== branchcode);
+
+    const header = document.createElement('div');
+    const body = document.createElement('div');
+    header.className = 'panel-header';
+    body.className = 'panel-body';
+    body.id = 'panel-body';
+
+    // 1. Build dropdown options from config array
+    const optionsHTML = config.map(branch => 
+        `<option value="${branch.code}" ${branch.code === branch_active ? 'selected' : ''}>
+            ${branch.title}
+        </option>`
+    ).join('');
+
+    var popupHTML = '';
+    if (config.length > 1) {
+        var popupHTML = `
+        <div class="branch-selector-container">
+            <select id="branch-dropdown">
+                ${optionsHTML}
+            </select>
+        </div>`;
+    } 
+
+    header.innerHTML = `
+        ${popupHTML}
+        <div class="header-top">
+            <span id="eye-icon" class="eye-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-blue-600"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clip-rule="evenodd"></path></svg>
+            </span>
+            <h3 class="header-title">${activebranch.title}</h3>
+            <span id="panel-toggle" class="chevron">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+            </span>
+        </div>
+    `;
+    container.appendChild(header);
+    container.appendChild(body);
+
+    if (config.length > 1) {
+        document.getElementById('branch-dropdown').addEventListener('change', (e) => {
+            const newBranchCode = e.target.value;
+            branch_active = newBranchCode;
+            
+            activateBranch(config, newBranchCode);
+            
+            const newBranchData = config.find(b => b.code === newBranchCode);
+            if (newBranchData && window.map) {
+                // Only run flyTo on initial map load
+                if (!map_loaded) {
+                    map.flyTo({
+                        center: newBranchData.maplibre_centre,
+                        zoom: 5.2, 
+                        essential: true
+                    });
+                }
+                
+                const allCodes = config.map(item => item.code);
+                const hiddenBranches = allCodes.filter(c => c !== newBranchCode);
+                hideLayersByPrefix(hiddenBranches);
+            }
+        });
+    }
+
+    document.getElementById('eye-icon').addEventListener('click', (e) => {
+        e.stopPropagation();
+        globalVisible = !globalVisible;
+        
+        const panel = document.getElementById('panel-body');
+
+        panel.style.opacity = globalVisible ? '1' : '0.3';
+        document.getElementById('eye-icon').classList.toggle('is-hidden', !globalVisible);
+
+        if (globalVisible) {
+            panel.classList.remove('master-hidden');
+            const checkboxes = body.querySelectorAll('#layers-panel input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                toggleMapLayer(cb.dataset.dataset, cb.checked);
+            });
+        } else {
+            panel.classList.add('master-hidden');
+            
+            // Hide all project layers
+            map.getStyle().layers.forEach(layer => {
+                if (layer.id.includes('--')) {
+                    map.setLayoutProperty(layer.id, 'visibility', 'none');
+                }
+            });
+        }
+    });
+
+    document.getElementById('panel-toggle').addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            document.getElementById('panel-toggle').classList.remove('collapsed');
+        } else {
+            body.style.display = 'none';
+            document.getElementById('panel-toggle').classList.add('collapsed');
+        }
+    });
+
+    function renderLayers(datasets, parentElement) {
+        datasets.forEach(layer => {
+            const item = document.createElement('div');
+            item.className = `layer-item level-${layer.level}`;            
+            const isParent = layer.children && layer.children.length > 0;
+            let title = layer.title;
+
+            // If only one child we use title of child as often more informative than section title
+            if (isParent) {
+                if (layer.children.length == 1) {
+                    title = layer.children[0].title;
+                }
+            }
+
+            item.innerHTML = `
+                <div class="layer-row">
+                    <input type="checkbox" 
+                        id="${layer.dataset}" 
+                        ${layer.defaultactive ? 'checked' : ''} 
+                        data-dataset="${layer.dataset}">
+                    <label for="${layer.dataset}">
+                        <div class="label-text">${title}</div>
+                        <span class="color-dot" style="background-color: ${layer.color}; opacity: ${layer.level === 2 ? 0.5 : 1}"></span>
+                    </label>
+                </div>
+            `;
+
+            const checkbox = item.querySelector('input');
+            checkbox.addEventListener('change', (e) => {
+                if (!globalVisible) return false;
+                const isActive = e.target.checked;
+                toggleMapLayer(layer.dataset, isActive);
+            });
+
+            if (isParent) {
+                if (layer.children.length > 1) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'children-container';
+                    renderLayers(layer.children, childrenContainer);
+                    item.appendChild(childrenContainer);
+                }
+            }
+
+            parentElement.appendChild(item);
+        });
+    }
+
+    renderLayers(activebranch.datasets, body);
+    document.getElementById('layers-panel').style.display = 'block';
+    hideLayersByPrefix(hiddenbranches);
+
+    let activebranch_visibilitymap = getLayerVisibilityMap(activebranch.datasets);
+    map.getStyle().layers.forEach(layer => {
+        if (layer.id.startsWith(branchcode + '--')) {
+            map.setLayoutProperty(layer.id, 'visibility', activebranch_visibilitymap[layer.id] ? 'visible': 'none');
+        }
+    });
+
+}
+
+function toggleMapLayer(layerId, visible) {
+    if (!window.map) return;
+    if (!globalVisible) return;
+    const visibility = visible ? 'visible' : 'none';
+
+    if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', visibility);
+    }
+}
+
+function hideLayersByPrefix(prefixes) {
+    if (!window.map) return;
+
+    const allLayers = map.getStyle().layers;
+    allLayers.forEach(layer => {
+        const shouldHide = prefixes.some(prefix => layer.id.startsWith(prefix + '--'));
+        if (shouldHide) {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+    });
+}
+
+// Flattens branch's datasets into object of { datasetId: boolean }
+function getLayerVisibilityMap(datasets) {
+    return datasets.reduce((acc, layer) => {
+        acc[layer.dataset] = layer.defaultactive;
+        if (layer.children && layer.children.length > 0) {
+            const childrenMap = getLayerVisibilityMap(layer.children);
+            Object.assign(acc, childrenMap);
+        }
+        return acc;
+    }, {});
+}
+
+let globalVisible = true;
+
+// Wait for config file to load
+const config = await loadConfig();
+
+if (config.length == 0) {
+    console.log("No branches in opensiteenergy-data.json, cannot load map");
+}
+
+const allbranches = config.map(item => item.code);
+const firstbranch = config[0];
+const firstbranch_visibilitymap = getLayerVisibilityMap(firstbranch.datasets);
+let branch_active = firstbranch.code;
+let map_loaded = false;
+
+// Create maplibre and add control
+const map = new maplibregl.Map({
+    container: 'map',
+    style: firstbranch['tileserver'],
+    zoom: 5.2,
+    maxPitch: 85,
+    minZoom: 5,
+    maxBounds: firstbranch['maplibre_bounds'],
+    center: firstbranch['maplibre_centre']
+});
+
+map.addControl(
+    new maplibregl.NavigationControl({
+        visualizePitch: true,
+        showZoom: true,
+        showCompass: true
+    })
+);
+
+// Activate first branch on map load
+map.on('load', () => {
+    map.fitBounds(firstbranch['maplibre_bounds']);
+    activateBranch(config, branch_active);
+    map_loaded = true;
+});
+
+// Intercept all map data before it's displayed
+map.on('styledata', () => {
+    if (!map_loaded) {
+        const allCodes = config.map(item => item.code);
+        const otherCodes = allCodes.filter(c => c !== branch_active);
+
+        map.getStyle().layers.forEach(layer => {
+            if (layer.id.startsWith(branch_active + '--')) {
+                if (!firstbranch_visibilitymap[layer.id]) {
+                    map.setLayoutProperty(layer.id, 'visibility', 'none');
+                }
+            }
+
+            if (otherCodes.some(prefix => layer.id.startsWith(prefix + '--'))) {
+                map.setLayoutProperty(layer.id, 'visibility', 'none');
+            }
+        });
+    }
+});
+
+</script>
+
+</body>
+</html>

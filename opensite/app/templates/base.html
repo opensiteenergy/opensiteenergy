@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    {% block meta %}{% endblock meta %}
+
+    <title>Open Site Energy Server - {% block title %}{{ title }}{% endblock title %}</title>
+
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <!-- Custom fonts for this template-->
+    <link href="{{ url_for('static', path='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="{{ url_for('static', path='css/sb-admin-2.min.css') }}" rel="stylesheet">
+
+    <!-- Custom styles for this page -->
+    <link href="{{ url_for('static', path='vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        .table td {
+            padding: 0px;
+        }
+
+        .navbar {
+            z-index: 100;
+        }
+
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; padding: 13px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card-body {padding: 0px; padding-top: 0.9em;}
+        .full { grid-column: 1 / -1; }
+        
+        .template-header { background: var(--dark); color: white; padding: 15px 25px; border-radius: 10px; margin: 0 auto 20px auto;}
+        .template-select { padding: 8px; border-radius: 5px; border: none; }
+
+        .flex { display: flex; gap: 10px; align-items: flex-end; }
+        .form-group { margin-bottom: 2px; }
+        label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: #666; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; box-sizing: border-box; }
+        
+        .group-item { border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 5px; background: #fff; overflow: hidden; }
+        .handle { margin-right: 12px; color: #adb5bd; font-size: 1.2rem; }
+        .ds-row { background: #fcfcfc; border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
+        
+        /* .btn { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: 0.2s; } */
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #ff4d4d; color: #ffffff; border:none}
+        .btn-action { background: #3eb410; color: #ffffff; border:none}
+        .icon-danger { background: none; color: #ff4d4d; padding: 5px 10px; font-size: 1.1rem; border:none}
+        .btn-bare { background: none; border: none;}
+        .btn-lg {font-size:1.5em;}
+        .config-textarea {
+            width: 100%;
+            min-height: 200px; 
+            resize: none;
+            overflow: hidden;
+            line-height: 1.5;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .arrow-icon {
+            transition: transform 0.3s ease;
+            display: inline-block;
+            cursor: pointer;
+            margin-right: 8px;
+            user-select: none;
+        }
+
+        .arrow-icon.is-open {
+            transform: rotate(90deg); /* Points down when open */
+        }
+
+        .group-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .btn-util {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            color: #495057;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-util:hover {
+            background-color: #e2e6ea;
+            border-color: #dae0e5;
+        }
+
+        .ds-row {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #f0f0f0;
+            border-color: #bbb;
+        }
+
+        .fa-fw {
+            width: 1.25em;
+            text-align: center;
+        }
+
+        .template-select {
+            border: 1px #CCC solid;
+            appearance: none;
+            -webkit-appearance: none;
+
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='black'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+
+            background-position: right 7px center;
+            background-size: 12px;
+            
+            padding-right: 40px; 
+
+            overflow-x:hidden;overflow: hidden;
+        }
+
+
+        .pill-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            user-select: none;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .pill:hover {
+            filter: brightness(0.95);
+            transform: translateY(-1px);
+        }
+
+        .pill-label {
+            font-weight: 500;
+            margin-right: 4px;
+            opacity: 0.8;
+        }
+
+        .pill-value {
+            font-weight: bold;
+        }
+
+        /* Color Themes */
+        .pill-blue {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .pill-green {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .pill i {
+            margin-right: 6px;
+            font-size: 0.75rem;
+        }
+
+        .color-picker-wrapper:hover i {
+            color: #000;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .group-color-input {
+            border: none;
+            padding: 0;
+            background: none;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;   /* Set your desired size */
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .group-color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .group-color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 12px; 
+        }
+
+        .group-color-input::-moz-color-swatch {
+            border: none;
+            border-radius: 12px;
+        }
+
+        .group-color-input:focus {
+            outline: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .warning-text {
+            color: #d9534f;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+</style>
+
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/admin">
+                <div class="sidebar-brand-text mx-3">Open&nbsp;Site&nbsp;Energy</div>
+            </a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item -->
+            <li class="nav-item">
+                <a class="nav-link" href="/configurations"
+                    aria-expanded="true">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>Configurations</span>
+                </a>
+            </li>
+
+            <!-- Nav Item -->
+            <li class="nav-item">
+                <a class="nav-link" href="/build"
+                    aria-expanded="true">
+                    <i class="fas fa-fw fa-circle-play"></i>
+                    <span><b>Run build</b></span>
+                </a>
+            </li>
+
+            <!-- Nav Item -->
+            <li class="nav-item">
+                <a class="nav-link" href="/files"
+                    aria-expanded="true">
+                    <i class="fas fa-fw fa-download"></i>
+                    <span>Generated files</span>
+                </a>
+            </li>
+            
+            <!-- Nav Item -->
+            <li class="nav-item">
+                <a class="nav-link" href="/setdomain"
+                    aria-expanded="true">
+                    <i class="fas fa-fw fa-globe"></i>
+                    <span>Set domain name</span>
+                </a>
+            </li>
+
+            <!-- Nav Item -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" target="_live" href="/" 
+                    aria-expanded="true">
+                    <i class="fas fa-fw fa-eye"></i>
+                    <span>Live website</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <h1 class="h3 ml-2 mt-4 mb-4 text-gray-800">{% block headline %}{{ headline }}{% endblock headline %}</h1>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="btn-circle fa text-gray-900 btn-lg fa-user"></i>
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Logout
+                                </a>
+                            </div>
+                        </li>
+
+                    </ul>
+
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid" style="width: 100%!important;height: calc(100% - 5.95rem);" >
+
+                    {% block content %}
+                    {% endblock content %}
+                    
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+
+            {% block footer %}
+
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Open Site Energy 2026</span>
+                    </div>
+                </div>
+            </footer>
+
+            {% endblock footer %}
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-primary" href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stop Processing Modal-->
+    <div class="modal fade" id="stopProcessingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Stop Processing?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Select "Stop" below if you are ready to stop the current processing.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-danger" href="/buildstop">Stop</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="{{ url_for('static', path='vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', path='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="{{ url_for('static', path='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="{{ url_for('static', path='js/sb-admin-2.min.js') }}"></script>
+
+        <!-- Page level plugins -->
+    <script src="{{ url_for('static', path='vendor/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', path='vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
+    
+    <script>
+
+        $(document).ready(function() {
+            $('#dataTable').DataTable();
+        });
+
+        document.querySelector("#button-commandline-copy").onclick = function(){
+            document.querySelector("#textarea-commandline").select();
+            document.execCommand('copy');
+        };
+
+        document.querySelector("#button-commandline-copy").onclick = function(){
+            document.querySelector("#textarea-commandline").select();
+            document.execCommand('copy');
+        };
+
+    </script>
+
+</body>
+
+</html>

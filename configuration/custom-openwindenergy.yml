@@ -1,0 +1,159 @@
+tip-height:
+  124.2
+blade-radius:
+  47.8
+
+osm:
+  https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf
+
+areas:
+  - england
+  - wales
+  - scotland
+  - northern-ireland
+  - uk
+
+structure:
+  aviation-and-exclusion-areas:
+    - airspace--uk
+    - civilian-airports--uk
+    - danger-areas--uk
+    - mod-training-areas--uk
+  ecology-and-wildlife:
+    - ancient-woodlands--england
+    - ancient-woodlands--northern-ireland
+    - ancient-woodlands--scotland
+    - ancient-woodlands--wales
+    - hedgerows--uk
+    - local-nature-reserves--england
+    - local-nature-reserves--scotland
+    - local-nature-reserves--wales
+    - national-nature-reserves--england
+    - national-nature-reserves--northern-ireland
+    - national-nature-reserves--scotland
+    - national-nature-reserves--wales
+    - osm-nature-reserves--uk
+    - ramsar-sites--england
+    - ramsar-sites--northern-ireland
+    - ramsar-sites--scotland
+    - ramsar-sites--wales
+    - sites-of-special-scientific-interest--england
+    - sites-of-special-scientific-interest--northern-ireland
+    - sites-of-special-scientific-interest--scotland
+    - sites-of-special-scientific-interest--wales
+    - special-areas-of-conservation--england
+    - special-areas-of-conservation--northern-ireland
+    - special-areas-of-conservation--scotland
+    - special-areas-of-conservation--wales
+    - special-protection-areas--england
+    - special-protection-areas--northern-ireland
+    - special-protection-areas--scotland
+    - special-protection-areas--wales
+    - wild-land-areas--scotland
+  environmental-data:
+    - inadequate-wind-speeds--uk
+  heritage-impacts:
+    - conservation-areas--england
+    - conservation-areas--scotland
+    - conservation-areas--wales
+    - listed-buildings--england
+    - listed-buildings--northern-ireland
+    - listed-buildings--scotland
+    - listed-buildings--wales
+    - registered-historic-battlefields--england
+    - registered-historic-battlefields--scotland
+    - registered-parks-and-gardens--england
+    - registered-parks-and-gardens--northern-ireland
+    - registered-parks-and-gardens--scotland
+    - registered-parks-and-gardens--wales
+    - scheduled-ancient-monuments--england
+    - scheduled-ancient-monuments--northern-ireland
+    - scheduled-ancient-monuments--scotland
+    - scheduled-ancient-monuments--wales
+    - world-heritage-sites--england
+    - world-heritage-sites--northern-ireland
+    - world-heritage-sites--scotland
+    - world-heritage-sites--wales
+  landscape-and-visual-impacts:
+    - areas-of-outstanding-natural-beauty--england
+    - areas-of-outstanding-natural-beauty--northern-ireland
+    - areas-of-outstanding-natural-beauty--scotland
+    - areas-of-outstanding-natural-beauty--wales
+    - heritage-coasts--england
+    - heritage-coasts--scotland
+    - heritage-coasts--wales
+    - national-parks--england
+    - national-parks--scotland
+    - national-parks--wales
+  other-technical-constraints: 
+    - bridleways--uk
+    - inland-waters--uk
+    - pipelines--uk
+    - power-lines--uk
+    - public-footpaths--uk
+    - public-roads-a-and-b-roads-and-motorways--uk
+    - railway-lines--uk
+  separation-distance-from-residential:
+    - separation-distance-from-residential--uk
+
+buffers: 
+  civilian-airports--uk:
+    500
+  hedgerows--uk: 
+    50
+  listed-buildings--england: 
+    50
+  listed-buildings--northern-ireland: 
+    50
+  listed-buildings--scotland: 
+    50
+  listed-buildings--wales: 
+    50
+  bridleways--uk:
+    200
+  inland-waters--uk:
+    1.1 * height-to-tip
+  pipelines--uk:
+    1.1 * height-to-tip
+  power-lines--uk:
+    1.1 * height-to-tip
+  public-footpaths--uk:
+    1.1 * height-to-tip
+  public-roads-a-and-b-roads-and-motorways--uk: 
+    1.1 * height-to-tip
+  railway-lines--uk:
+    1.1 * height-to-tip
+  separation-distance-from-residential--uk:
+    6 * blade-radius
+
+style:
+  aviation-and-exclusion-areas:
+    color:
+      purple
+  ecology-and-wildlife:
+    color:
+      darkgreen
+  environmental-data:
+    color:
+      blue
+  heritage-impacts:
+    color:
+      darkgoldenrod
+  landscape-and-visual-impacts:
+    color:
+      chartreuse
+  other-technical-constraints: 
+    color:
+      red
+  separation-distance-from-residential:
+    color:
+      darkorange
+
+
+
+
+
+
+
+
+

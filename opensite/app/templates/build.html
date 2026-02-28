@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}
+Build
+{% endblock title %}
+
+{% block headline %}
+Build
+{% endblock headline %}
+
+{% block content %}
+
+{% raw %}
+
+<div id="app">
+
+    <div class="grid">
+
+        <div class="card shadow">
+            <div class="card-header py-3 text-white bg-primary">
+                <h6 class="m-0 font-weight-bold">Select configuration(s)</h6>
+            </div>
+            <div class="card-body">
+
+                <div style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 20px; align-items: center;">
+
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 5px;">Server configuration</label>
+                        
+                        <div style="display: flex; gap: 8px; align-items: flex-end;">
+                            <select v-model="selectedTemplatePkg" class="template-select" style="flex-grow: 1;">
+                                <option v-for="conf in sortedCustomConfigs" :key="conf.id" :value="conf">
+                                    Open Site Energy - {{ conf.name }}
+                                </option>
+                                <option v-for="conf in sortedLocalConfigs" :key="conf.id" :value="conf.id">
+                                    Local configuration - {{ conf.title }}
+                                </option>
+                            </select>
+                            <button 
+                                class="btn btn-primary" 
+                                @click.prevent="addServerConfiguration"
+                                style="white-space: nowrap;"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(1, 1fr); align-items: center;margin-top: 10px; ">
+
+                    <div class="form-group">
+                        <label style="display: block;">Configuration URL</label>
+                        
+                        <div style="display: flex; gap: 8px; align-items: flex-end;width: 100%;">
+                            <input 
+                                v-model="configurationUrl" 
+                                placeholder="https://" 
+                                class="form-control" 
+                                style="flex-grow: 1;"
+                            >
+                            <button 
+                                class="btn btn-primary" 
+                                @click.prevent="addURLConfiguration"
+                                style="white-space: nowrap;"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="grid-column: span 2;margin-top: 20px;">
+                        <div v-for="(conf, index) in configurations" :key="index" 
+                            :class="['badge', getBadgeClass(conf.type), 'border-0 p-1 mr-2 mb-2 shadow-sm d-inline-flex align-items-center rounded-pill']">
+                            
+                            <div class="text-left px-2">
+                                <div class="text-white" :title="conf.value" style="font-size: 0.8rem; font-weight: 500;">
+                                    {{ conf.name }}
+                                </div>
+                            </div>
+
+                            <button type="button" class="close ml-2 text-white" @click.prevent="configurations.splice(index, 1)" style="outline: none; text-shadow: none; opacity: 0.8;">
+                                <span aria-hidden="true"><i class="fa fa-times-circle" aria-hidden="true"></i></span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 text-white bg-primary">
+                <h6 class="m-0 font-weight-bold">Global clipping area</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group position-relative" id="clipping-search-app">
+                    <label>Enter clipping Area</label>
+                    
+                    <input 
+                        type="text" 
+                        v-model="searchQuery" 
+                        class="form-control" 
+                        placeholder="Type to filter areas..."
+                        @focus="showPopup = true"
+                    >
+
+                    <div v-if="showPopup && filteredAreas.length > 0" 
+                        class="shadow-lg border rounded position-absolute bg-white w-100" 
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto; top: 100%;">
+                        
+                        <ul class="list-group list-group-flush">
+                            <li v-for="area in filteredAreas" 
+                                :key="area"
+                                @click="selectArea(area)"
+                                class="list-group-item list-group-item-action cursor-pointer"
+                                style="cursor: pointer;">
+                                {{ area }}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <input type="hidden" name="clipping_area" :value="selectedArea">
+                </div>
+
+                <div style="grid-column: span 2;">
+                    <div v-for="(area, index) in selectedClippingAreas" :key="index" 
+                        class="badge-primary border-0 p-1 mr-2 mt-2 shadow-sm d-inline-flex align-items-center rounded-pill">
+                        
+                        <div class="text-left px-2">
+                            <div class="text-white" style="font-size: 0.8rem; font-weight: 500;">
+                                {{ area }}
+                            </div>
+                        </div>
+
+                        <button type="button" class="close ml-2 text-white" @click.prevent="selectedClippingAreas.splice(index, 1)" style="outline: none; text-shadow: none; opacity: 0.8;">
+                            <span aria-hidden="true"><i class="fa fa-times-circle"></i></span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow mb-2 full">
+            <div class="card-header py-3 bg-danger text-white">
+                <h6 class="m-0 font-weight-bold">Purge existing data</h6>
+            </div>
+            <div class="card-body">
+                <p class="m-0 mb-2 text-secondary">Click checkbox below to delete existing dataset downloads and database tables and rebuild layers from scratch.</p>
+                <p> <i>Note: this may considerably increase time to generate final layers.</i></p>
+
+                <div>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                        <div class="input-group-text fm-4">
+                            <input v-model="purgeAll" id="purge-all" name="purge-all" type="checkbox" aria-label="Purge existing data">
+                        </div>
+                        </div>
+                        <label class="form-check-label form-control" for="purge-all">
+                            <b>Purge existing downloads and database tables</b>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="full" class="margin:0;padding-left:0;">
+                <button v-if="configurations.length > 0" class="btn btn-success btn-lg btn-icon-split" type="button" @click="startBuild">
+                    <span class="icon text-white-50">
+                        <i class="fa fa-play-circle"></i>
+                    </span>
+                    <span class="text">Start generating constraint layers</span>
+                </button>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="button-commandline-copy"></div>
+
+<script>
+
+{% endraw %}
+
+const rawClippingAreas = {{ clippingareas | tojson }};
+
+{% raw %}
+
+const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
+
+createApp({
+    setup() {
+        const ckanUrl = ref("https://data.opensite.energy");
+        const backendBase = '';
+        const proxyUrl = backendBase + "ckan";
+        const OPEN_SITE_ENERGY_YML = 'Open Site Energy YML';
+        const defaultAreas = "england,wales,scotland,northern-ireland,uk";
+        const lastSyncedUrl = ref(""); // Tracks the last successful fetch
+        const library = ref({});
+        const customConfigs = ref([]);
+        const localConfigs = ref([]);
+        const configurationUrl = ref("");
+        const selectedTemplatePkg = ref("new");
+        const isInitialLoading = ref(false);
+        const configurations = ref([]);
+        const selectedArea = ref('');
+        const selectedClippingAreas = ref([]);
+        const allAreas = ref(rawClippingAreas);
+        const searchQuery = ref('');
+        const showPopup = ref(false);
+        const purgeAll = ref(false);
+
+        const filteredAreas = computed(() => {
+            const query = searchQuery.value.toLowerCase();
+            return allAreas.value.filter(area => 
+                area.toLowerCase().startsWith(query)
+            );
+        });
+
+        const selectArea = (area) => {
+            if (!selectedClippingAreas.value.includes(area)) {
+                selectedClippingAreas.value.push(area);
+            }
+            searchQuery.value = '';
+            showPopup.value = false;
+            // Add any extra logic for when an area is chosen
+        };
+
+        const getBadgeClass = (type) => {
+            const map = {
+                'server': 'badge-primary',
+                'local': 'badge-success',
+                'url': 'badge-info'
+            };
+            return map[type] || 'badge-secondary';
+        };
+
+        const currentConfigurationTitle = computed(() => {
+            const val = selectedTemplatePkg.value;
+            if (val.title) return val.title;
+            const idToFind = typeof val === 'string' ? val : val.id;
+            const match = localConfigs.value.find(c => c.id === idToFind);
+            
+            return match ? match.title : idToFind;
+        });
+
+        // Sorted Backend Configs (by name)
+        const sortedCustomConfigs = computed(() => {
+        return [...customConfigs.value].sort((a, b) => 
+            a.name.localeCompare(b.name)
+        );
+        });
+
+        // Sorted Local Templates (by title)
+        const sortedLocalConfigs = computed(() => {
+        return [...localConfigs.value].sort((a, b) => 
+            a.title.localeCompare(b.title)
+        );
+        });
+
+        // Fetch custom list from backend
+        const refreshCustomConfigs = async () => {
+            const response = await fetch(backendBase + 'list');
+            const data = await response.json();
+            localConfigs.value = data; 
+        };
+
+        const fetchLibrary = async () => {
+            isInitialLoading.value = true;
+            const currentAttemptUrl = ckanUrl.value;
+            const baseUrl = currentAttemptUrl.replace(/\/+$/, "");
+            const api = `${baseUrl}/api/3/action/package_search?rows=1000`;
+            
+            try {
+                const res = await fetch(`${proxyUrl}?url=${encodeURIComponent(api)}`);
+                if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
+                const data = await res.json();
+                
+                if (data.success && data.result && data.result.results) {
+                    const results = {};
+                    const configs = [];
+
+                    data.result.results.forEach(pkg => {
+                        const group = (pkg.groups && pkg.groups.length > 0) ? pkg.groups[0] : { name: 'default', title: 'Default' };
+                        
+                        // Find the actual resource URL for the YAML file
+                        const ymlResource = pkg.resources ? pkg.resources.find(r => r.format === OPEN_SITE_ENERGY_YML) : null;
+
+                        if (group.name.includes('custom') || group.title === 'Custom configurations') {
+                            if (ymlResource && ymlResource.url) {
+                                // Swap out the ID logic: the "id" of this config entry is now the URL itself
+                                configs.push({
+                                    title: pkg.title || pkg.name,
+                                    value: ymlResource.url, // This will be the value in your popup
+                                    name: pkg.name
+                                });
+                            }
+                        } else {
+                            if (!results[group.name]) results[group.name] = { group_title: group.title, prefixes: {} };
+                            const prefix = pkg.name.split('--')[0];
+                           if (!results[group.name].prefixes[prefix]) {
+                                const parts = (pkg.title || pkg.name).split(' - ');
+                                results[group.name].prefixes[prefix] = {
+                                    prefix: prefix,
+                                    cleanTitle: parts.length > 1 ? parts.slice(0, -1).join(' - ') : parts[0],
+                                    children: [],
+                                    childTitles: [] 
+                                };
+                            }
+                            results[group.name].prefixes[prefix].children.push(pkg.name);
+                            results[group.name].prefixes[prefix].childTitles.push(pkg.title || pkg.name);
+                        }
+                    });
+
+                    library.value = results;
+                    // Sort by title
+                    customConfigs.value = configs.sort((a,b) => a.title.localeCompare(b.title));
+                    lastSyncedUrl.value = currentAttemptUrl; 
+                }
+            } catch (e) {
+                console.error("Connection error:", e);
+                alert("Failed to sync library: " + e.message);
+            } finally {
+                isInitialLoading.value = false;
+            }
+        };
+
+        const addServerConfiguration = async () => {
+            const selected = selectedTemplatePkg.value;
+            if (!selected) return;
+
+            let type, value, name;
+
+            if (typeof selected === 'object' && selected.value) {
+                // Source: sortedCustomConfigs
+                type = 'server';
+                value = selected.value;
+                name = selected.name; // From conf.name
+            } else {
+                // Source: sortedLocalConfigs (where value is just the ID)
+                type = 'local';
+                value = selected;
+                const localObj = sortedLocalConfigs.value.find(l => l.id === selected);
+                name = localObj ? localObj.title : value;
+            }
+
+            // 2. Intelligent Duplication Check
+            const isDuplicate = configurations.value.some(conf => 
+                conf.type === type && conf.value === value
+            );
+
+            let prefix = 'Open Site Energy';
+            if (type == 'local') prefix = 'Local'; 
+            if (!isDuplicate) {
+                configurations.value.push({ 
+                    type, 
+                    value, 
+                    name: `${prefix} - ${name}` 
+                });
+            }
+            
+            selectedTemplatePkg.value = null;
+        };
+
+        const addURLConfiguration = async () => {
+            const urlString = configurationUrl.value.trim();
+
+            if (urlString.startsWith('https://')) {
+                const isDuplicate = configurations.value.some(conf => 
+                    conf.type === 'url' && conf.value === urlString
+                );
+
+                if (!isDuplicate) {
+                    try {
+                        // Create a URL object to parse the string easily
+                        const urlObj = new URL(urlString);
+                        // Get the last part of the pathname (the filename)
+                        let basename = urlObj.pathname.split('/').pop();
+                        const domain = urlObj.hostname;
+                        // Fallback in case the URL ends in a slash (e.g., .../configs/)
+                        if (!basename) basename = urlObj.hostname;
+
+                        configurations.value.push({ 
+                            type: 'url', 
+                            value: urlString, 
+                            name: 'URL - ' + domain + '.../' + basename 
+                        });
+                        configurationUrl.value = '';
+                    } catch (e) {
+                        console.error("Invalid URL format", e);
+                    }
+                }
+            }
+        };
+
+        const loadBuildData = async () => {
+            try {
+                const response = await fetch('/getbuild');
+                const data = await response.json();
+                configurations.value = data.configurations || [];
+                selectedClippingAreas.value = data.clip || [];
+            } catch (e) { console.error("Load failed", e); }
+        };
+
+        const getBuildConfig = () => {
+            return {
+                configurations: configurations.value,
+                clip: selectedClippingAreas.value,
+                purgeall: purgeAll.value,
+            }
+        }
+
+        const saveBuildData = async () => {
+            try {
+                const response = await fetch('/savebuild', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(getBuildConfig())
+                });
+
+                if (response.ok) {
+                    // console.log("Save successful");
+                }
+            } catch (error) {
+                console.error("Error saving build:", error);
+            }
+        };
+
+        const startBuild = async () => {
+            try {
+                const response = await fetch('/buildstart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(getBuildConfig())
+                });
+
+                if (response.ok) {
+                    window.location.href = '/processmonitor';
+                }
+            } catch (error) {
+                console.error("Error starting build:", error);
+            }
+        };
+
+        watch([configurations, selectedClippingAreas], (newVal, oldVal) => {
+            saveBuildData();
+        }, { deep: true });
+
+        onMounted(() => {
+            fetchLibrary();
+            refreshCustomConfigs();
+            loadBuildData();
+        });
+
+        return { 
+            ckanUrl, 
+            library, 
+            customConfigs, 
+            localConfigs,
+            selectedTemplatePkg, 
+            configurations,
+            isInitialLoading,
+            addServerConfiguration,
+            addURLConfiguration,
+            configurationUrl,
+            fetchLibrary, 
+            sortedCustomConfigs,
+            sortedLocalConfigs,
+            currentConfigurationTitle,
+            getBadgeClass,
+            searchQuery,
+            showPopup,
+            filteredAreas,
+            selectedClippingAreas,
+            selectArea,
+            selectedArea,
+            startBuild,
+            purgeAll,
+       };
+    }
+}).mount('#app');
+</script>
+
+{% endraw %}
+
+{% endblock content %}
+

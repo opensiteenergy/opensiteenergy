@@ -1,0 +1,14 @@
+osm:
+  https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest.osm.pbf
+
+clipping:
+  - northern-ireland
+
+areas:
+  - northern-ireland
+  - uk
+
+
+
+
+

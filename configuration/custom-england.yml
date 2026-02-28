@@ -1,0 +1,14 @@
+osm:
+  https://download.geofabrik.de/europe/united-kingdom/england-latest.osm.pbf
+
+clipping:
+  - england
+
+areas:
+  - england
+  - uk
+
+
+
+
+

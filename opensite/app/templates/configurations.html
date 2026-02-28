@@ -1,0 +1,1030 @@
+{% extends "base.html" %}
+
+{% block title %}
+Configurations
+{% endblock title %}
+
+{% block headline %}
+Configurations
+{% endblock headline %}
+
+{% block content %}
+
+{% raw %}
+
+<div id="app">
+
+    <div v-if="activeModal" 
+        @click.self="activeModal = null"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background-color: rgba(0, 0, 0, 0.6); z-index: 99999; 
+                display: flex; align-items: center; justify-content: center;">
+        
+        <div style="background: white; width: 90%; max-width: 500px; 
+                    max-height: 80vh; border-radius: 12px; padding: 24px; 
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); 
+                    display: flex; flex-direction: column; color: #1a202c;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #edf2f7; padding-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.25rem;">
+                    {{ activeModal.title }}
+                </h3>
+                <button @click="activeModal = null" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #a0aec0;">&times;</button>
+            </div>
+
+            <div style="overflow-y: auto; flex-grow: 1; padding-right: 8px;">
+                <div v-if="config.type === 'wind'" style="font-size: 0.9em;">
+                    In addition to numerical values, you can also enter formula using <span style="font-family: monospace; font-weight:800; font-size: 1em;">height-to-tip</span> and 
+                    <span style="font-family: monospace; font-weight:800; font-size: 1em;">blade-radius</span> values. For example:
+                    <div style="font-family: monospace; font-size: 1em;padding-top:5px; padding-bottom:20px;">1.1 * height-to-tip</div>
+                </div>
+                <div v-for="cid in activeModal.ds.children" :key="cid" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: #4a5568; margin-bottom: 4px; word-break: break-all;">
+                        {{ getChildTitle(activeModal.groupKey, cid) }}
+                    </label>
+                    <input 
+                        v-model="activeModal.ds.childSettings[cid][activeModal.type]" 
+                        type="text"
+                        placeholder="Value in metres"
+                        style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem;"
+                    >
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #edf2f7;">
+                <button @click="activeModal = null" 
+                        style="width: 100%; background: #4a5568; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showDeleteModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Confirm Deletion</h3>
+            <p>Are you sure you want to delete <strong>{{ currentConfigurationTitle }}</strong>?</p>
+            <p class="warning-text">This action cannot be undone</p>
+            
+            <div class="modal-actions">
+                <button class="btn" @click="showDeleteModal = false">Cancel</button>
+                <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="grid">
+
+        <div class="card shadow full">
+            <div class="card-header py-3 text-white bg-primary">
+                <h6 class="m-0 font-weight-bold">Template</h6>
+            </div>
+            <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; align-items: center;">
+                
+                <div class="form-group" style="display: flex; gap: 5px; align-items: center;">
+                    <select v-model="selectedTemplatePkg" class="template-select" style="flex-grow: 1;">
+                        <option value="new">New configuration</option>
+                        <option v-for="conf in sortedCustomConfigs" :key="conf.id" :value="conf">
+                            Open Site Energy - {{ conf.name }}
+                        </option>
+                        <option v-for="conf in sortedLocalConfigs" :key="conf.id" :value="conf.id">
+                            Local configuration - {{ conf.title }}
+                        </option>
+                    </select>
+                    <button class="btn btn-primary" @click="loadTemplate" :disabled="!selectedTemplatePkg || isLoadingTemplate">
+                        {{ isLoadingTemplate ? 'Loading...' : 'LOAD' }}
+                    </button>
+                </div>
+
+                <div class="form-group" style="display: flex; justify-content: flex-end; gap: 5px;">
+                    <button v-if="isSaveable" class="btn btn-action" @click="saveConfig">SAVE</button>
+                    <button v-if="backend_urn !== undefined" class="btn btn-danger" @click="deleteConfig">DELETE</button>
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow full">
+            <div class="card-header py-3 text-white bg-primary">
+                <h6 class="m-0 font-weight-bold">Global properties</h6>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <div class="form-group"><label>Title</label><input v-model="config.title"></div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select v-model="config.type" class="template-select">
+                            <option value="" disabled>Select type...</option>
+                            <option value="solar">Solar</option>
+                            <option value="wind">Wind</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Code</label><input v-model="config.code" @blur="config.code = config.code.trim() || 'default'"></div>
+                    <div class="form-group"><label>Areas - comma-separated</label><input v-model="config.areasRaw"></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Open Street Map PBF datafile</label><input v-model="config.osm"></div>
+                    <div v-if="config.type === 'wind'" class="form-group"><label>Turbine Height to Tip (m)</label><input v-model="config.heightToTip" type="number" step="0.1"></div>
+                    <div v-if="config.type === 'wind'" class="form-group"><label>Turbine Blade Radius (m)</label><input v-model="config.bladeRadius" type="number" step="0.1"></div>
+
+                </div>
+                
+                <!-- <div class="flex" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <input v-model="ckanUrl" placeholder="CKAN Base URL" style="flex-grow: 1;">
+                    <button v-if="showSyncButton" @click="fetchLibrary" class="btn btn-primary" :disabled="isInitialLoading">
+                        {{ isInitialLoading ? 'Syncing...' : 'Sync CKAN Library' }}
+                    </button>
+                </div> -->
+
+            </div>
+        </div>
+
+        <div class="card shadow full">
+            <div class="card-header py-3 text-white bg-primary">
+                <h6 class="m-0 font-weight-bold">Structure Builder</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group" v-if="availableGroups.length" style="padding-bottom: 12px;">
+                    <div class="flex">
+                        <select class="template-select" v-model="selectedGroupKey" style="width:auto;">
+                            <option value="">Choose group</option>
+                            <option v-for="g in availableGroups" :key="g.key" :value="g.key">{{ g.title }}</option>
+                        </select>
+                        <button @click="addGroup" class="btn btn-primary">Add</button>
+                    </div>
+                </div>
+
+                <div ref="sortableContainer">
+                    <div v-for="(group, gIdx) in workspace" :key="group.id" class="group-item">
+                        <div class="group-header" style="display: flex; align-items: center; cursor: pointer;">
+                            <span class="handle">⠿</span>
+                            
+                            <div @click="toggleGroup(group.id)" style="flex-grow: 1">
+                                <span  
+                                    :style="{
+                                        display: 'inline-block',
+                                        marginRight: '10px',
+                                        transition: 'transform 0.2s ease',
+                                        transform: isExpanded(group.id) ? 'rotate(90deg)' : 'rotate(0deg)',
+                                        userSelect: 'none'
+                                    }"
+                                ><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+                                <strong :style="{ color: group.color}" style="flex-grow: 1">
+                                    {{ group.title }}
+                                </strong>
+                            </div>
+
+                            <strong >
+                                <div class="header-right" style="display:inline-block;padding-right:10px;margin-top:5px;">
+                                <input type="color" v-model="group.color" title="Edit colour for this group" class="group-color-input">
+                                </div>
+                            </strong>
+                            
+                            <button class="icon-danger" @click.stop="workspace.splice(gIdx, 1)"><i class="fa fa-times-circle" aria-hidden="true"></i></button>
+                        </div>
+
+                        <div v-show="isExpanded(group.id)" style="padding: 15px; border-top: 1px solid #eee;">
+
+                            <div v-if="sortedDatasetsForGroup(group.key).length > 0" style="margin-bottom: 12px;">
+                                <select class="template-select" v-model="group.tempDs" @change="addDatasetToGroup(gIdx)" style="width:auto;">
+                                    <option value="" disabled selected>Add dataset</option>
+                                    <option v-for="ds in sortedDatasetsForGroup(group.key)" :key="ds.prefix" :value="ds">
+                                        {{ ds.cleanTitle }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-else style="margin-bottom: 12px; font-size: 0.8rem; color: #666; font-style: italic;">
+                                ✓ All available datasets for this category have been added
+                            </div>
+                            
+                            <div v-for="(ds, dIdx) in group.selectedDatasets" :key="ds.prefix" class="ds-row">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div style="display: flex; align-items: center;">
+                                        <div style="display: flex; flex-direction: column; margin-right: 12px;">
+                                            <button class="btn-bare" @click="moveDataset(gIdx, dIdx, -1)" :disabled="dIdx === 0"><i class="fa fa-caret-up" aria-hidden="true"></i></button>
+                                            <button class="btn-bare" @click="moveDataset(gIdx, dIdx, 1)" :disabled="dIdx === group.selectedDatasets.length - 1"><i class="fa fa-caret-down" aria-hidden="true"></i></button>
+                                        </div>
+
+                                        <div>
+                                            <strong style="font-size: 0.95rem;">{{ ds.cleanTitle }}</strong>
+                                            
+                                            <div style="font-size: 0.75rem; color: #718096; margin-top: 6px;">
+                                                <div v-for="line in getFormattedChildList(ds)" :key="line" class="child-line">
+                                                    {{ line }}
+                                                </div>
+                                            </div>
+
+                                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+
+
+                                                <div class="pill-container">
+                                                    <div @click="activeModal = { ds, type: 'buffer', groupKey: group.key, title: 'Edit buffers'}" 
+                                                        class="pill pill-blue" @click="editBuffer">
+                                                        <i class="fa-solid fa-circle-dot fa-fw"></i>
+                                                        <span class="pill-label">Edit buffers</span>
+                                                    </div>
+
+                                                    <div @click="activeModal = { ds, type: 'distance', groupKey: group.key, title: 'Edit distance exclusions' }" 
+                                                        class="pill pill-green" @click="editDistance">
+                                                        <i class="fa-solid fa-arrows-left-right fa-fw"></i>
+                                                        <span class="pill-label">Edit distance exclusions</span>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="icon-danger" @click="group.selectedDatasets.splice(dIdx, 1)"><i class="fa fa-times-circle" aria-hidden="true"></i></button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+        </div>
+
+        <div class="card full">
+            <div class="group-container" style="border: 0px solid #e2e8f0; 
+                                                border-radius: 8px; 
+                                                overflow: hidden; 
+                                                width: 100%; 
+                                                max-width: 100%; 
+                                                box-sizing: border-box;">
+                <div @click="isYamlCollapsed = !isYamlCollapsed" 
+                    style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.2rem; transition: transform 0.2s; display: inline-block;"
+                            :style="{ transform: isYamlCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }">
+                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                        </span>
+                        <h3 style="margin: 0; font-size: 1rem; color: #2d3748;">Final YAML Output</h3>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button @click.stop="downloadYaml" class="btn-lg btn-bare" title="Download YML configuration file">
+                            <i class="fa fa-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="!isYamlCollapsed" style="padding: 0px; background: white; ">
+                    <p style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 10px;">
+                        All edits sync back to <b>Structure Builder</b>
+                    </p>
+                    <textarea 
+                        ref="yamlTextarea"
+                        v-model="yamlCode" 
+                        @input="handleManualInput($event.target.value)"
+                        spellcheck="false"
+                        class="config-textarea"
+                    ></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="button-commandline-copy"></div>
+
+<script>
+const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
+
+const colorToHex = (str) => {
+    if (!str) return "";
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.fillStyle = str;
+    return ctx.fillStyle; 
+};
+
+const HEX_TO_NAME = (() => {
+    const map = {};
+    const div = document.createElement('div');
+    const cssNames = [
+        "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "bisque", "black", 
+        "blanchedalmond", "blue", "blueviolet", "brown", "burlywood", "cadetblue", "chartreuse", 
+        "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson", "cyan", "darkblue", 
+        "darkcyan", "darkgoldenrod", "darkgray", "darkgreen", "darkgrey", "darkkhaki", 
+        "darkmagenta", "darkolivegreen", "darkorange", "darkorchid", "darkred", "darksalmon", 
+        "darkseagreen", "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", 
+        "darkviolet", "deeppink", "deepskyblue", "dimgray", "dimgrey", "dodgerblue", 
+        "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro", "ghostwhite", 
+        "gold", "goldenrod", "gray", "green", "greenyellow", "grey", "honeydew", "hotpink", 
+        "indianred", "indigo", "ivory", "khaki", "lavender", "lavenderblush", "lawngreen", 
+        "lemonchiffon", "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow", 
+        "lightgray", "lightgreen", "lightgrey", "lightpink", "lightsalmon", "lightseagreen", 
+        "lightskyblue", "lightslategray", "lightslategrey", "lightsteelblue", "lightyellow", 
+        "lime", "limegreen", "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", 
+        "mediumorchid", "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen", 
+        "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose", 
+        "moccasin", "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange", 
+        "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise", "palevioletred", 
+        "papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue", "purple", 
+        "rebeccapurple", "red", "rosybrown", "royalblue", "saddlebrown", "salmon", "sandybrown", 
+        "seagreen", "seashell", "sienna", "silver", "skyblue", "slateblue", "slategray", 
+        "slategrey", "snow", "springgreen", "steelblue", "tan", "teal", "thistle", "tomato", 
+        "turquoise", "violet", "wheat", "white", "whitesmoke", "yellow", "yellowgreen"
+    ];    
+    cssNames.forEach(name => {
+        const hex = colorToHex(name);
+        map[hex.toLowerCase()] = name;
+    });
+    return map;
+})();
+
+const hexToName = (hex) => HEX_TO_NAME[hex?.toLowerCase()] || hex;
+
+createApp({
+    setup() {
+        const ckanUrl = ref("https://data.opensite.energy");
+        const backendBase = '';
+        const proxyUrl = backendBase + "ckan";
+        const OPEN_SITE_ENERGY_YML = 'Open Site Energy YML';
+        const defaultOSM = "https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf";
+        const defaultAreas = "england,wales,scotland,northern-ireland,uk";
+        const lastSyncedUrl = ref(""); // Tracks the last successful fetch
+        const library = ref({});
+        const customConfigs = ref([]);
+        const localConfigs = ref([]);
+        const backend_urn = ref(undefined);
+        const workspace = ref([]);
+        const selectedGroupKey = ref("");
+        const selectedTemplatePkg = ref("new");
+        const isSaveable = ref(false);
+        const isDeletable = ref(false);
+        const isInitialLoading = ref(false);
+        const isFullyLoaded = ref(false);
+        const isLoadingTemplate = ref(false);
+        const sortableContainer = ref(null);
+        const activeModal = ref(null);
+        const yamlCode = ref("");
+        const isYamlCollapsed = ref(true);
+        const expandedGroups = ref([]);
+        const yamlTextarea = ref(null);
+        const showDeleteModal = ref(false);
+
+        const currentConfigurationTitle = computed(() => {
+            const val = selectedTemplatePkg.value;
+            if (!val || val === 'new') return 'New Configuration';
+            if (val.title) return val.title;
+            const idToFind = typeof val === 'string' ? val : val.id;
+            const match = localConfigs.value.find(c => c.id === idToFind);
+            
+            return match ? match.title : idToFind;
+        });
+
+        // Sorted Backend Configs (by name)
+        const sortedCustomConfigs = computed(() => {
+        return [...customConfigs.value].sort((a, b) => 
+            a.name.localeCompare(b.name)
+        );
+        });
+
+        // Sorted Local Templates (by title)
+        const sortedLocalConfigs = computed(() => {
+        return [...localConfigs.value].sort((a, b) => 
+            a.title.localeCompare(b.title)
+        );
+        });
+
+        // Fetch custom list from backend
+        const refreshCustomConfigs = async () => {
+            const response = await fetch(backendBase + 'list');
+            const data = await response.json();
+            localConfigs.value = data; 
+        };
+
+        // Save Logic
+        const saveConfig = async () => {
+            const ymlContent = generateYamlFromUI();
+            const formData = new FormData();
+            formData.append('content', ymlContent);
+            
+            // If we have an existing URN, send it so we overwrite instead of create new
+            if (backend_urn.value) {
+                formData.append('urn', backend_urn.value);
+            }
+
+            const response = await fetch(backendBase + 'save', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+
+            localConfigs.value = result.configs;
+            backend_urn.value = result.urn;
+            selectedTemplatePkg.value = result.urn;
+            isSaveable.value = false;
+        };
+
+        const deleteConfig = () => {
+            // Instead of browser confirm, we just show our Vue modal
+            if (backend_urn.value) {
+                showDeleteModal.value = true;
+            }
+        };
+
+        const confirmDelete = async () => {
+            showDeleteModal.value = false;
+            if (!backend_urn.value) return;
+
+            const response = await fetch(`${backendBase}delete?urn=${backend_urn.value}`);
+            const data = await response.json();
+            
+            localConfigs.value = data;
+            startNewConfig();
+        };
+
+        const handleManualInput = (val) => {
+            syncYamlToUI(val);
+            adjustTextareaHeight();
+        };
+
+        const adjustTextareaHeight = () => {
+            const el = yamlTextarea.value;
+            if (el) {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+            }
+        };
+
+        // Use a watcher to trigger the height adjustment whenever the YAML changes
+        watch(yamlCode, async () => {
+            await nextTick();
+            adjustTextareaHeight();
+        }, { immediate: true });
+
+        watch(isYamlCollapsed, async () => {
+            await nextTick();
+            adjustTextareaHeight();
+        }, { immediate: true });
+
+        const createBlankConfig = () => ({
+            title: "Untitled configuration",
+            type: "",
+            code: "default",
+            heightToTip: undefined,
+            bladeRadius: undefined,
+            osm: defaultOSM,
+            areasRaw: defaultAreas,
+        });
+
+        const config = ref(createBlankConfig());
+
+        const expandGroup = (groupId) => {
+            const index = expandedGroups.value.indexOf(groupId);
+            if (index == -1) {
+                expandedGroups.value.push(groupId);
+            }
+        };
+
+        const toggleGroup = (groupId) => {
+            const index = expandedGroups.value.indexOf(groupId);
+            if (index > -1) {
+                expandedGroups.value.splice(index, 1);
+            } else {
+                expandedGroups.value.push(groupId);
+            }
+        };
+
+        const isExpanded = (groupId) => {
+            return expandedGroups.value.includes(groupId);
+        };
+
+        const resetToClosed = () => {
+            expandedGroups.value = [];
+        };
+
+        // Computed property to show/hide the sync button
+        const showSyncButton = computed(() => {
+            return ckanUrl.value !== lastSyncedUrl.value;
+        });
+
+        const fetchLibrary = async () => {
+            isInitialLoading.value = true;
+            const currentAttemptUrl = ckanUrl.value;
+            const baseUrl = currentAttemptUrl.replace(/\/+$/, "");
+            const api = `${baseUrl}/api/3/action/package_search?rows=1000`;
+            
+            try {
+                const res = await fetch(`${proxyUrl}?url=${encodeURIComponent(api)}`);
+                if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
+                const data = await res.json();
+                
+                if (data.success && data.result && data.result.results) {
+                    const results = {};
+                    const configs = [];
+
+                    // 1. Initial Categorization
+                    data.result.results.forEach(pkg => {
+                        const group = (pkg.groups && pkg.groups.length > 0) ? pkg.groups[0] : { name: 'default', title: 'Default' };
+                        
+                        if (group.name.includes('custom') || group.title === 'Custom configurations') {
+                            if (pkg.resources && pkg.resources.some(r => r.format === OPEN_SITE_ENERGY_YML)) {
+                                configs.push(pkg);
+                            }
+                        } else {
+                            if (!results[group.name]) {
+                                results[group.name] = { group_title: group.title, prefixes: {} };
+                            }
+                            
+                            const prefix = pkg.name.split('--')[0];
+                            if (!results[group.name].prefixes[prefix]) {
+                                results[group.name].prefixes[prefix] = {
+                                    prefix: prefix,
+                                    children: [],
+                                    childTitles: []
+                                };
+                            }
+                            results[group.name].prefixes[prefix].children.push(pkg.name);
+                            results[group.name].prefixes[prefix].childTitles.push(pkg.title || pkg.name);
+                        }
+                    });
+
+                    // 2. Alphabetical Synchronization & Title Generation
+                    // We iterate through our collected object to sort children BEFORE setting library.value
+                    Object.values(results).forEach(group => {
+                        Object.values(group.prefixes).forEach(prefixData => {
+                            // Pair them up so they don't get separated during sort
+                            const paired = prefixData.children.map((name, index) => ({
+                                name: name,
+                                title: prefixData.childTitles[index]
+                            }));
+
+                            // Sort by Title
+                            paired.sort((a, b) => a.title.localeCompare(b.title));
+
+                            // Re-assign sorted arrays
+                            prefixData.children = paired.map(p => p.name);
+                            prefixData.childTitles = paired.map(p => p.title);
+
+                            // Generate the Clean Title from the new "Alpha Leader" (the first child)
+                            const firstTitle = prefixData.childTitles[0];
+                            const parts = firstTitle.split(' - ');
+                            prefixData.cleanTitle = parts.length > 1 ? parts.slice(0, -1).join(' - ') : parts[0];
+                        });
+                    });
+
+                    // 3. Update Reactive State
+                    library.value = results;
+                    customConfigs.value = configs.sort((a,b) => (a.title || a.name).localeCompare(b.title || b.name));
+                    lastSyncedUrl.value = currentAttemptUrl; 
+                }
+            } catch (e) {
+                console.error("Connection error:", e);
+                alert("Failed to sync library: " + e.message);
+            } finally {
+                isInitialLoading.value = false;
+            }
+        };
+
+        const getFormattedChildList = (ds) => {
+            return ds.children.map((cid, index) => {
+                const title = ds.childTitles[index] || cid;
+                const settings = ds.childSettings?.[cid];
+                const extras = [];
+
+                if (settings) {
+                    if (settings.buffer !== undefined && settings.buffer !== "") {
+                        if (isNaN(settings.buffer)) {
+                            extras.push(`buffer: ${settings.buffer}`);
+                        } else {
+                            extras.push(`${settings.buffer}m buffer`);
+                        }
+                    }
+                    if (settings.distance !== undefined && settings.distance !== "") {
+                        if (isNaN(settings.distance)) {
+                            extras.push(`distance exclusion: ${settings.distance}`);
+                        } else {
+                            extras.push(`${settings.distance}m distance exclusion`);
+                        }
+                    }
+                }
+
+                // If we have values, append them in brackets
+                return extras.length > 0 
+                    ? `${title} (${extras.join(', ')})` 
+                    : title;
+            });
+        };
+
+        const startNewConfig = () => {
+            backend_urn.value = undefined;
+            selectedTemplatePkg.value = "new";
+            config.value = createBlankConfig();
+            workspace.value = [];
+            resetToClosed(); 
+        };
+
+        const loadTemplate = async () => {
+            if (!selectedTemplatePkg.value) return;
+
+            // Reset groups expanded state
+            resetToClosed();
+
+            if (selectedTemplatePkg.value === "new") {
+                startNewConfig();
+                return;
+            }
+
+            isLoadingTemplate.value = true;
+
+            try {
+
+                if ((typeof selectedTemplatePkg.value === 'string') && 
+                    selectedTemplatePkg.value.startsWith('local-opensiteenergy-') && 
+                    selectedTemplatePkg.value.endsWith('.yml')) {
+                    ymlURL = `${backendBase}/get?urn=${selectedTemplatePkg.value}`;
+                    backend_urn.value = selectedTemplatePkg.value;
+                } else {
+                    const resource = selectedTemplatePkg.value.resources.find(r => r.format === OPEN_SITE_ENERGY_YML);
+                    if (!resource) throw new Error(`This template contains no '${OPEN_SITE_ENERGY_YML}' file.`);
+                    ymlURL = `${proxyUrl}?url=${encodeURIComponent(resource.url)}`;
+                    backend_urn.value = undefined;
+                }
+
+                const res = await fetch(ymlURL);
+                const text = await res.text();
+                const doc = jsyaml.load(text);
+
+                config.value.title = doc.title || "Untitled configuration";
+                config.value.type = doc.type || "";
+                config.value.code = doc.code || "";
+                config.value.heightToTip = doc['height-to-tip'] || undefined;
+                config.value.bladeRadius = doc['blade-radius'] || undefined;
+                config.value.osm = doc.osm || defaultOSM;
+                config.value.areasRaw = Array.isArray(doc.areas) ? doc.areas.join(',') : "";
+
+                workspace.value = [];
+                if (doc.structure) {
+                    for (const [groupName, dsList] of Object.entries(doc.structure)) {
+                        if (!library.value[groupName]) continue;
+                        
+                        const selectedDatasets = [];
+                        const processedPrefixes = new Set();
+
+                        dsList.forEach(fullName => {
+                            const pfx = fullName.split('--')[0];
+                            
+                            // If we haven't added this prefix group to the workspace yet
+                            if (!processedPrefixes.has(pfx) && library.value[groupName].prefixes[pfx]) {
+                                processedPrefixes.add(pfx);
+                                
+                                // Get the library definition (the "master" list of children for this prefix)
+                                const dsBase = library.value[groupName].prefixes[pfx];
+                                
+                                // Create the childSettings object
+                                const childSettings = {};
+                                
+                                // Check every child that belongs to this prefix
+                                dsBase.children.forEach(cid => {
+                                    childSettings[cid] = {
+                                        // Look up values from the top-level doc.buffers or doc.distances
+                                        buffer: (doc.buffers && doc.buffers[cid] !== undefined) ? doc.buffers[cid] : undefined,
+                                        distance: (doc.distances && doc.distances[cid] !== undefined) ? doc.distances[cid] : undefined
+                                    };
+                                });
+
+                                selectedDatasets.push({
+                                    ...JSON.parse(JSON.stringify(dsBase)), // Deep copy to avoid reference issues
+                                    childSettings
+                                });
+                            }
+                        });
+
+                        const rawColor = doc.style?.[groupName]?.color || "";
+                        workspace.value.push({
+                            id: groupName,
+                            key: groupName,
+                            title: library.value[groupName].group_title,
+                            color: colorToHex(rawColor),
+                            selectedDatasets,
+                            tempDs: ""
+                        });
+                    }
+                }
+
+            } catch (e) { alert("Load failed: " + e.message); }
+            finally { isLoadingTemplate.value = false; }
+        };
+
+        const availableGroups = computed(() => {
+            const usedKeys = workspace.value.map(item => item.key);
+            
+            return Object.keys(library.value)
+                .filter(key => !usedKeys.includes(key))
+                .map(key => ({
+                    key: key,
+                    title: library.value[key].group_title
+                }))
+                // Add the sort here:
+                .sort((a, b) => a.title.localeCompare(b.title));
+        });
+        
+        const sortedDatasetsForGroup = (groupKey) => {
+            // 1. Safely get the prefixes from the library ref
+            const groupData = library.value[groupKey];
+            if (!groupData || !groupData.prefixes) return [];
+
+            const allDatasets = Object.values(groupData.prefixes);
+
+            // 2. Find the current group in the workspace to see what's selected
+            const workspaceGroup = workspace.value.find(g => g.key === groupKey);
+            const selectedPrefixes = workspaceGroup 
+                ? workspaceGroup.selectedDatasets.map(d => d.prefix) 
+                : [];
+
+            // 3. Filter out selected and sort
+            return allDatasets
+                .filter(ds => !selectedPrefixes.includes(ds.prefix))
+                .sort((a, b) => a.cleanTitle.localeCompare(b.cleanTitle));
+        };
+
+        const addGroup = () => {
+            if (!selectedGroupKey.value) return;
+            workspace.value.push({
+                id: selectedGroupKey.value,
+                key: selectedGroupKey.value,
+                title: library.value[selectedGroupKey.value].group_title,
+                selectedDatasets: [],
+                tempDs: ""
+            });
+            expandGroup(selectedGroupKey.value);
+            selectedGroupKey.value = "";
+        };
+
+        const addDatasetToGroup = (gIdx) => {
+            const group = workspace.value[gIdx];
+            if (!group.tempDs) return;
+
+            const newDs = JSON.parse(JSON.stringify(group.tempDs));
+            
+            // Initialize as undefined so they don't appear in YAML by default
+            newDs.childSettings = {};
+            newDs.children.forEach(cid => {
+                newDs.childSettings[cid] = { 
+                    buffer: undefined, 
+                    distance: undefined 
+                };
+            });
+
+            group.selectedDatasets.push(newDs);
+            group.tempDs = "";
+        };
+
+        const applyToAllInModal = (value) => {
+            const { ds, type } = activeModal.value;
+            ds.children.forEach(cid => {
+                // If the input is blank, set to undefined; otherwise use the value
+                ds.childSettings[cid][type] = value === "" ? undefined : value;
+            });
+        };
+
+        const syncYamlToUI = (newYaml) => {
+            try {
+                const doc = jsyaml.load(newYaml);
+                if (!doc) return;
+
+                config.value.title = doc.title || "Untitled configuration";
+                config.value.type = doc.type || "";
+                config.value.code = doc.code || "";
+                config.value.heightToTip = doc['height-to-tip'] || undefined;
+                config.value.bladeRadius = doc['blade-radius'] || undefined;
+                config.value.osm = doc.osm || "https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf";
+                config.value.areasRaw = Array.isArray(doc.areas) ? doc.areas.join(',') : "";
+
+                const newWorkspace = [];
+
+                // 2. Rebuild Workspace from Structure
+                for (const [groupName, dsList] of Object.entries(doc.structure)) {
+
+                    if (!library.value[groupName]) continue;
+
+                    const yamlStyle = doc.style?.[groupName]?.color;
+                    const rawColor = doc.style?.[groupName]?.color || "";
+                    // const importedColor = colorToHex(rawColor);
+                    const selectedDatasets = [];
+                    const processedPrefixes = new Set();
+
+                    dsList.forEach(fullName => {
+                        const pfx = fullName.split('--')[0];
+                        if (!processedPrefixes.has(pfx) && library.value[groupName].prefixes[pfx]) {
+                            processedPrefixes.add(pfx);
+                            
+                            const dsBase = library.value[groupName].prefixes[pfx];
+                            const childSettings = {};
+
+                            // Map buffers and distances back to settings
+                            dsBase.children.forEach(cid => {
+                                childSettings[cid] = {
+                                    buffer: doc.buffers?.[cid] ?? undefined,
+                                    distance: doc.distances?.[cid] ?? undefined
+                                };
+                            });
+
+                            selectedDatasets.push({
+                                ...JSON.parse(JSON.stringify(dsBase)),
+                                childSettings
+                            });
+                        }
+                    });
+
+                    newWorkspace.push({
+                        id: groupName,
+                        key: groupName,
+                        title: library.value[groupName].group_title,
+                        color: rawColor,
+                        selectedDatasets,
+                        tempDs: ""
+                    });
+                }
+
+                workspace.value = newWorkspace;
+            } catch (e) {
+                // Silently fail while typing to avoid console noise; 
+                // valid YAML will eventually be typed.
+            }
+        };
+
+        // Function to generate YAML string from the current UI state
+        const generateYamlFromUI = () => {
+            const structure = {};
+            const buffers = {};
+            const distances = {};
+            const style = {};
+
+            workspace.value.forEach(group => {
+                const childIds = [];
+                group.selectedDatasets.forEach(ds => {
+                    ds.children.forEach(cid => {
+                        childIds.push(cid);
+                        const settings = ds.childSettings ? ds.childSettings[cid] : null;
+                        if (settings) {
+                            if (settings.buffer !== undefined && settings.buffer !== "") {
+                                const b = settings.buffer.toString().trim();
+                                buffers[cid] = isNaN(b) ? b : Number(b);
+                            }
+                            if (settings.distance !== undefined && settings.distance !== "") {
+                                const d = settings.distance.toString().trim();
+                                distances[cid] = isNaN(d) ? d : Number(d);
+                            }
+                        }
+                    });
+                });
+                if (childIds.length) {
+                    structure[group.key] = childIds;
+                    if (group.color) {
+                        style[group.key] = {
+                            color: hexToName(group.color)
+                        };
+                    }
+                }
+            });
+
+            const finalOutput = {
+                title: config.value.title,
+                type: config.value.type,
+                code: config.value.code,
+                osm: config.value.osm,
+                areas: config.value.areasRaw.split(',').map(s => s.trim()).filter(s => s),
+            };
+
+            if (config.value.heightToTip !== undefined) finalOutput['height-to-tip'] = config.value.heightToTip;
+            if (config.value.bladeRadius !== undefined) finalOutput['blade-radius'] = config.value.bladeRadius;
+            if (Object.keys(structure).length > 0) finalOutput.structure = structure;
+            if (Object.keys(buffers).length > 0) finalOutput.buffers = buffers;
+            if (Object.keys(distances).length > 0) finalOutput.distances = distances;
+            if (Object.keys(style).length > 0) finalOutput.style = style;
+
+            const yamlString = jsyaml.dump(finalOutput, { lineWidth: -1, quotingType: '"', noCompatMode: true });
+            return yamlString.replace(/^(title|type|code|height-to-tip|osm|areas|structure|buffers|distances|style):/gm, '\n$1:').trim();
+        };
+
+        // WATCHER: When UI changes, update the YAML text
+        watch([workspace, config], () => {
+            if (isFullyLoaded.value) {
+                isSaveable.value = true;
+            }
+            if (!isFullyLoaded.value) {
+                isFullyLoaded.value = true;
+            }
+            const newYaml = generateYamlFromUI();
+            // Only update if it's actually different to avoid cursor jumping in textarea
+            if (yamlCode.value !== newYaml) {
+                yamlCode.value = newYaml;
+            }
+        }, { deep: true });
+
+        const downloadYaml = () => {
+            const blob = new Blob([yamlCode.value], { type: 'text/yaml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${config.value.code || 'config'}.yml`;
+            link.click();
+        };
+
+        const moveDataset = (gIdx, dIdx, direction) => {
+            const list = workspace.value[gIdx].selectedDatasets;
+            const newIdx = dIdx + direction;
+
+            // Safety check: ensure we stay within bounds
+            if (newIdx < 0 || newIdx >= list.length) return;
+
+            // Swap the elements in the array
+            const element = list.splice(dIdx, 1)[0];
+            list.splice(newIdx, 0, element);
+        };
+
+        const getChildTitle = (groupKey, cid) => {
+            // Navigate into the library for this group
+            const group = library.value[groupKey];
+            if (!group) return cid;
+
+            // Look for the prefix that contains this child ID
+            for (const prefixKey in group.prefixes) {
+                const ds = group.prefixes[prefixKey];
+                if (ds.children.includes(cid)) {
+                    // Find the index of the child to get the matching title
+                    const childIdx = ds.children.indexOf(cid);
+                    return ds.childTitles[childIdx] || cid;
+                }
+            }
+            return cid; // Fallback to ID if title not found
+        };
+
+        onMounted(() => {
+            fetchLibrary();
+            refreshCustomConfigs();
+            Sortable.create(sortableContainer.value, {
+                handle: '.handle', animation: 180,
+                onEnd: (evt) => {
+                    const items = [...workspace.value];
+                    const [moved] = items.splice(evt.oldIndex, 1);
+                    items.splice(evt.newIndex, 0, moved);
+                    workspace.value = items;
+                }
+            });
+            if (workspace.value.length === 0) {
+                startNewConfig();
+            }
+        });
+
+        return { 
+            ckanUrl, 
+            showSyncButton, 
+            library, 
+            customConfigs, 
+            localConfigs,
+            workspace, 
+            selectedGroupKey, 
+            selectedTemplatePkg, 
+            isInitialLoading, 
+            isLoadingTemplate, 
+            isSaveable,
+            isDeletable,
+            backend_urn,
+            config, 
+            fetchLibrary, 
+            loadTemplate,
+            saveConfig, 
+            deleteConfig,
+            confirmDelete,
+            showDeleteModal,
+            addGroup, 
+            addDatasetToGroup, 
+            downloadYaml, 
+            sortableContainer, 
+            availableGroups, 
+            sortedDatasetsForGroup,
+            moveDataset,
+            activeModal,
+            applyToAllInModal,
+            getChildTitle,
+            getFormattedChildList,
+            isYamlCollapsed,
+            yamlCode,
+            yamlTextarea,
+            handleManualInput,
+            syncYamlToUI,
+            expandedGroups, 
+            toggleGroup, 
+            expandGroup,
+            isExpanded, 
+            resetToClosed,
+            sortedCustomConfigs,
+            sortedLocalConfigs,
+            currentConfigurationTitle
+       };
+    }
+}).mount('#app');
+</script>
+
+{% endraw %}
+
+{% endblock content %}
+

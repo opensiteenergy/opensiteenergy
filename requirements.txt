@@ -1,0 +1,26 @@
+colorama
+ckanapi
+xmltodict
+owslib
+pyvis
+psycopg2-binary
+osmium
+pyparsing
+pyyaml
+requests
+landez
+geopandas
+numpy
+rasterio
+setuptools==70.0.0
+gdal
+python-dotenv
+uvicorn
+fastapi
+pyogrio
+flask
+flask_cors
+httpx
+python-multipart
+docker
+#pip install --no-deps git+https://github.com/hotosm/osm-export-tool-python.git

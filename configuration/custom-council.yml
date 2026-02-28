@@ -1,0 +1,28 @@
+# *************************************************************************
+# Sample template with clipping on sub-country area, specifically council
+# *************************************************************************
+
+
+# To save time downloading/processing, specify smallest OpenStreetMap download
+
+osm:
+  https://download.geofabrik.de/europe/united-kingdom/england-latest.osm.pbf
+
+
+# Smallest area(s) to clip around
+
+clipping:
+  - Brighton and Hove
+
+
+# List of areas for selecting datasets to include
+# 'uk' is required to include any OSM datasets that are not nation-specific
+
+areas:
+  - england
+  - uk
+
+
+
+
+

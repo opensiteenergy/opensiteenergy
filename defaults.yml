@@ -1,0 +1,61 @@
+
+osm:
+  https://download.geofabrik.de/europe/united-kingdom-latest.osm.pbf
+
+# Based on openwind's own manual data on all large (>=75 m to tip-height) failed and successful UK onshore wind projects
+height-to-tip:
+  124.2
+
+# Based on openwind's own manual data on all large (>=75 m to tip-height) failed and successful UK onshore wind projects
+blade-radius:
+  47.8
+
+ckan:
+  https://data.opensite.energy
+ 
+areas:
+  - england
+  - wales
+  - scotland
+  - northern-ireland
+  - uk
+
+style:
+  aviation-and-exclusion-areas:
+    color:
+      purple
+  ecology-and-wildlife:
+    color:
+      darkgreen
+  environmental-data:
+    color:
+      blue
+  heritage-impacts:
+    color:
+      darkgoldenrod
+  landscape-and-visual-impacts:
+    color:
+      chartreuse
+  other-technical-constraints: 
+    color:
+      red
+  separation-distance-from-residential:
+    color:
+      darkorange
+
+# Possible output formats
+outputformats:
+  - gpkg
+  - shp
+  - geojson
+  - mbtiles
+  - web
+  - qgis
+
+snapgrid:
+  0.1
+
+
+
+
+

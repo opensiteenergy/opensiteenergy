@@ -1,0 +1,18 @@
+osm:
+  https://download.geofabrik.de/europe/great-britain-latest.osm.pbf
+
+clipping:
+  - england
+  - scotland
+  - wales
+
+areas:
+  - england
+  - scotland
+  - wales
+  - uk
+
+
+
+
+

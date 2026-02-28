@@ -1,0 +1,64 @@
+# --- Python Essentials ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+build-docker/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Testing & Coverage ---
+.tox/
+.nox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# --- Environment & Secrets ---
+.env
+.venv
+env.bak
+venv.bak
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Terraform ---
+terraform/aws/.terraform.lock.hcl
+terraform/aws/.terraform.tfstate.lock.info
+terraform/aws/.terraform/
+terraform/aws/terraform.tfstate
+terraform/aws/terraform.tfstate.backup
+terraform/gcp/.terraform.lock.hcl
+terraform/gcp/.terraform.tfstate.lock.info
+terraform/gcp/.terraform/
+terraform/gcp/terraform.tfstate
+terraform/gcp/terraform.tfstate.backup
+
+# --- Working files --
+
+test/
+osm-export-tool/
+deprecated/
+
+# --- Files created during running ---
+lib/
+*.log
+graph.html
+PROCESSING
+PROCESSINGCMD
+PROCESSINGSTART
+PROCESSINGCOMPLETE

@@ -1,0 +1,14 @@
+osm:
+  https://download.geofabrik.de/europe/united-kingdom/wales-latest.osm.pbf
+
+clipping:
+  - wales
+  
+areas:
+  - wales
+  - uk
+
+
+
+
+

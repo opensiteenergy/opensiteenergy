@@ -1,0 +1,1 @@
+Warning 1: 2GB file size limit reached for build/output/layers/tmp-solar--all-layers.shp. Going on, but might cause compatibility issues with third party software
