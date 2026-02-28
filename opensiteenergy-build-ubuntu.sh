@@ -133,7 +133,7 @@ echo '********* STAGE 4: Installing Open Site Energy source code **********' >> 
 echo '<!doctype html><html><head><meta http-equiv="refresh" content="2"></head><body><pre>Cloning Open Site Energy GitHub repo...</pre></body></html>' | sudo tee /var/www/html/index.nginx-debian.html
 sudo rm -R /usr/src/opensiteenergy
 cd /usr/src
-git clone https://github.com/SH801/opensiteenergy.git opensiteenergy
+git clone https://github.com/opensiteenergy/opensiteenergy.git opensiteenergy
 
 echo '********* STAGE 4: Finished installing Open Site Energy source code **********' >> /usr/src/opensiteenergy/opensiteenergy.log
 
@@ -210,6 +210,7 @@ python3 -m pip install -U setuptools wheel twine check-wheel-contents | tee -a /
 cd opensiteenergy
 pip install gdal==`gdal-config --version` | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 pip install -r requirements.txt | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+pip install git+https://github.com/opensiteenergy/openlibrary.git | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 cd ..
 cp /usr/src/opensiteenergy/.env-template /usr/src/opensiteenergy/.env
 sudo echo "

@@ -161,8 +161,7 @@ class OpenSiteConstants:
     TILESERVER_STYLES_FOLDER    = TILESERVER_OUTPUT_FOLDER / "styles"
     TILESERVER_MAIN_STYLE_FILE  = TILESERVER_STYLES_FOLDER / 'opensiteenergy.json'
     TILESERVER_FONTS_FOLDER     = TILESERVER_OUTPUT_FOLDER / "fonts"
-    TILESERVER_FONTS_GITHUB     = "https://github.com/open-wind/openmaptiles-fonts.git"
-    TILESERVER_FONTS_SRC_GITHUB = 'https://github.com/openmaptiles/fonts'
+    TILESERVER_FONTS_GITHUB     = "https://github.com/opensiteenergy/openmaptiles-fonts.git"
     TILESERVER_URL              = os.getenv("TILESERVER_URL", "http://localhost:8080")
 
     # Location of shell script that downloads coastline and landcover data for whole earth
