@@ -39,7 +39,7 @@ The toolkit build system can be accessed in two ways:
 Install [Docker](https://docker.com) then run:
 
 ```
-git clone [TOCOME]
+git clone git@github.com:opensiteenergy/opensiteenergy.git
 cd opensiteenergy
 ./server-docker.sh
 ```
@@ -83,7 +83,7 @@ To download specific GIS files, select **Generated files** on the left-hand menu
 Install [Docker](https://docker.com) then run:
 
 ```
-git clone [TOCOME]
+git clone git@github.com:opensiteenergy/opensiteenergy.git
 cd opensiteenergy
 
 ./build-docker.sh wind
