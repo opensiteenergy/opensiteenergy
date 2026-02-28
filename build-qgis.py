@@ -307,7 +307,6 @@ def createQGISFile():
     # Add layers and groups to QGIS project 
 
     root        = QgsProject.instance().layerTreeRoot()
-    firstlayer  = None
 
     for branch in data:
 
@@ -335,21 +334,21 @@ def createQGISFile():
             qgis_section.addLayer(layer)
             qgis_section.setExpanded(False)
 
-            if not firstlayer: firstlayer = layer
+            # Make invisible 'Constraint-free sites' (layer 0) and 'All constraints' (layer 1)
 
             if dataset == branch['datasets'][0]['dataset']:
+                qgis_section.setItemVisibilityChecked(False)
+
+            if dataset == branch['datasets'][1]['dataset']:
 
                 qgis_section.setItemVisibilityChecked(False)
 
-                # Set default full extent of project to extent of first (aggregate) layer
+                # Set default full extent of project to extent of second (aggregate) layer (first aggregate = 'Constraint-free sites')
 
                 # Use the layer's native CRS to avoid projection errors
                 ref_rect = QgsReferencedRectangle(layer.extent(), layer.crs())
                 project.viewSettings().setPresetFullExtent(ref_rect)
                 project.viewSettings().setDefaultViewExtent(ref_rect)
-
-                # project.viewSettings().setPresetFullExtent(QgsReferencedRectangle(layer.extent(), QgsCoordinateReferenceSystem.fromEpsgId(4326)))
-                # project.viewSettings().setDefaultViewExtent(QgsReferencedRectangle(layer.extent(), QgsCoordinateReferenceSystem.fromEpsgId(4326)))
 
             # Iterate through every child in section
 

@@ -5,6 +5,6 @@
 
 sudo apt update -y
 sudo apt install wget -y
-wget https://raw.githubusercontent.com/open-wind/openwindenergy/refs/heads/main/openwindenergy-build-ubuntu.sh
+wget https://raw.githubusercontent.com/opensiteenergy/opensiteenergy/refs/heads/main/opensiteenergy-build-ubuntu.sh
 chmod +x openwindenergy-build-ubuntu.sh
 sudo ./openwindenergy-build-ubuntu.sh

@@ -13,16 +13,16 @@ provider "google" {
   zone    = "us-east1-c"
 }
 
-resource "google_compute_address" "openwindenergy_static_ip" {
+resource "google_compute_address" "opensiteenergy_static_ip" {
   name = "ipv4-address"
 }
 
-resource "google_compute_network" "openwindenergy_network" {
-  name = "openwindenergy-network"
+resource "google_compute_network" "opensiteenergy_network" {
+  name = "opensiteenergy-network"
 }
 
 resource "google_compute_instance" "vm_instance" {
-  name         = "openwindenergy-server"
+  name         = "opensiteenergy-server"
   machine_type = "c4a-standard-4"
   tags         = ["ssh", "http-server", "https-server"]
   metadata_startup_script = <<EOF
@@ -31,9 +31,9 @@ echo "SERVER_USERNAME=${var.adminname}
 SERVER_PASSWORD=${var.password}" >> /tmp/.env
 sudo apt update -y
 sudo apt install wget -y
-wget https://raw.githubusercontent.com/open-wind/openwindenergy/refs/heads/main/openwindenergy-build-ubuntu.sh
-chmod +x openwindenergy-build-ubuntu.sh
-sudo ./openwindenergy-build-ubuntu.sh
+https://raw.githubusercontent.com/opensiteenergy/opensiteenergy/refs/heads/main/opensiteenergy-build-ubuntu.sh
+chmod +x opensiteenergy-build-ubuntu.sh
+sudo ./opensiteenergy-build-ubuntu.sh
 EOF
 
 
@@ -45,16 +45,16 @@ EOF
   }
 
   network_interface {
-    network = google_compute_network.openwindenergy_network.name
+    network = google_compute_network.opensiteenergy_network.name
     access_config {
-      nat_ip = google_compute_address.openwindenergy_static_ip.address
+      nat_ip = google_compute_address.opensiteenergy_static_ip.address
     }
   }
 }
 
 resource "google_compute_firewall" "allow_ssh" {
   name        = "allow-ssh"
-  network     = google_compute_network.openwindenergy_network.name
+  network     = google_compute_network.opensiteenergy_network.name
   direction   = "INGRESS"
   priority    = 1000
   target_tags = ["ssh"] # Replace with your instance's target tag
@@ -67,7 +67,7 @@ resource "google_compute_firewall" "allow_ssh" {
 
 resource "google_compute_firewall" "allow_http_https" {
   name          = "allow-http-https"
-  network       = google_compute_network.openwindenergy_network.name
+  network       = google_compute_network.opensiteenergy_network.name
   priority      = 1000          
   direction     = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
