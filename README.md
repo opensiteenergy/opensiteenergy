@@ -44,7 +44,11 @@ cd opensiteenergy
 ./server-docker.sh
 ```
 
-Once the Docker setup has finished, connect to the server application by loading `http://localhost:8000` from a web browser (username: `admin`, password: `password`). This will display the Open Site Energy administration interface:
+Once the Docker setup has finished, connect to the server application by loading `http://localhost:8000` from a web browser. You will be presented with a login screen:
+
+![Open Site Energy - Login](/images/opensiteenergy-admin-login.png)
+
+Enter default username: `admin`, password: `password`. This will display the Open Site Energy administration interface:
 
 ![Open Site Energy - Site configurations](/images/opensiteenergy-admin-configurations.png)
 

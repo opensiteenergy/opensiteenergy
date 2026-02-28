@@ -68,9 +68,12 @@ sudo apt install libcurl4-openssl-dev libpixman-1-dev libpixman-1-0 ccache cmake
 sudo apt install libc++-dev libc++abi-dev libpng-dev -y
 sudo apt install libgl1-mesa-dev libgl1-mesa-dri libjpeg-dev -y
 sudo apt install libgdal-dev gdal-bin python3-gdal -y
+sudo apt install chromium-browser chromium-chromedriver -y
 
 # Mac
-brew install cmake make geos git libpq libtiff libspatialite lua rapidjson shapelib sqlite curl proj virtualenv gdal
+brew install cmake make geos git libpq libtiff libspatialite lua rapidjson shapelib sqlite curl proj virtualenv gdal chromium chromedriver
+xattr -cr /Applications/Chromium.app
+xattr -d com.apple.quarantine $(which chromedriver)
 ```
 
 Clone the Open Site Energy repository and copy `.env-template` to `.env`:
@@ -383,6 +386,8 @@ http://[serveripaddress]
 After several minutes, a login to your new Open Site Energy server will appear. This will display detailed logs showing the server creation process. 
 
 Once the server has finished installing, you should be presented with the administration login screen:
+
+![Open Site Energy - Login](/images/opensiteenergy-admin-login.png)
 
 
 

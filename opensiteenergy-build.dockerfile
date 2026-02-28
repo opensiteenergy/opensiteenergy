@@ -21,18 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt update; exit 0
 
 
-# Install chrome browser so selenium can work
+# Install chromium browser so selenium can work
 
 RUN apt-get update && apt-get install -y \
-    wget gnupg unzip curl \
-    libnss3 libgconf-2-4 libxi6 libxcursor1 libxss1 libxcomposite1 \
-    libasound2 libxtst6 fonts-liberation libappindicator3-1 \
-    libatk-bridge2.0-0 libgtk-3-0 xdg-utils
-
-# 2. Install Google Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
-    && apt-get update && apt-get install -y google-chrome-stable
+    chromium-browser \
+    chromium-chromedriver
 
 
 # Install tilemaker
