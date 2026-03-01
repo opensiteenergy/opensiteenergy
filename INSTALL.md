@@ -42,7 +42,14 @@ To run Open Site Energy command line tool (non-server version) with Docker, ente
 
 ## Native install
 
-The following software needs to be installed to run Open Site Energy natively, ie. without Docker:
+If you install a native (non-Docker) version of Open Site Energy, replace `-docker` with `-cli` for identical functionality but with improved performance:
+
+```
+./server-cli.sh   # instead of ./server-docker.sh
+./build-cli.sh    # Instead of ./build-docker.sh
+```
+
+The following software needs to be installed to run Open Site Energy natively:
 
 - [GDAL](https://gdal.org): For transferring data in and out of PostGIS and general GIS operations.
 
@@ -65,6 +72,20 @@ For Windows platforms, install [`Multipass`](https://canonical.com/multipass/ins
 ```
 multipass launch noble --name opensiteenergy --cpus 4 --memory 12G --disk 250G
 multipass shell opensiteenergy 
+```
+
+To install Open Site Energy on a clean Ubuntu 24.04 instance, enter:
+
+```
+export ADMIN_USERNAME=admin     # Change username as required
+export ADMIN_PASSWORD=password  # Change password as required
+echo "ADMIN_USERNAME=${ADMIN_USERNAME}
+ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> /tmp/.env
+sudo apt update -y
+sudo apt install wget -y
+wget https://raw.githubusercontent.com/opensiteenergy/opensiteenergy/refs/heads/main/opensiteenergy-build-ubuntu.sh
+chmod +x opensiteenergy-build-ubuntu.sh
+sudo ./opensiteenergy-build-ubuntu.sh
 ```
 
 ### 1. Initial setup (includes install of GDAL and Open Site Energy Python libraries)

@@ -16,11 +16,11 @@ The toolkit provides a streamlined process for generating different parameter-sp
 
 The toolkit outputs data in a number of industry-standard GIS formats:
 
-- `GeoJSON`
-- `ESRI Shapefile`
-- `GeoPackage`
-- Mapbox Vector Tiles (`mbtiles`)
-- QGIS file
+- GeoJSON
+- ESRI Shapefile
+- GeoPackage
+- Mapbox Vector Tiles (mbtiles)
+- QGIS
 
 The toolkit also provides local versions of several popular GIS viewing clients for viewing the final renewable energy site constraints:
 
@@ -32,7 +32,22 @@ For an overview of how the toolkit works, see ['How it works'](#how-it-works), b
 The toolkit build system can be accessed in two ways:
 
 - **Server interface**: A web-based administration interface provides a simple way to create and run custom site contraint configurations. Once a build has been started, a dynamic **process monitor** shows the progress of individual tasks in real time.
-- **Command line interface**: The command line version of Open Site Energy runs site constraint builds without user interaction; the process finishes once the final build has finished.
+- **Command line interface**: The command line version of Open Site Energy runs site constraint builds without user interaction; the process finishes once the build has completed.
+
+## Installation 
+
+See [INSTALL.md](INSTALL.md). 
+
+## Minimum platform requirements
+
+To run the Open Site Energy build process on both `solar` and `wind`, you will need a computer with the following minimum configuration:
+
+- 12Gb memory
+- 250Gb free hard disk space
+
+## Typical timings
+
+During 'native' (non-Docker install) testing on a Mac Arm M3, the `wind` constraints build took approximately 2.5 hours to complete while the `solar` constraints build took upwards of 10 hours to complete. The longer time for `solar` is due to the large number of high-vertex datasets involved - this involves larger downloads and more intensive GIS processing.
 
 ## Quickstart - Server interface
 
@@ -109,14 +124,6 @@ You can view the results of a build by entering:
 
 This runs a temporary tileserver to serve up `mbtiles` files and a temporary webserver to serve `build/output/index.html`.
 
-## Installation 
-
-See [INSTALL.md](INSTALL.md). 
-
-If you install a local (ie. non-Docker) version of Open Site Energy, replace `-docker` with `-cli` for identical functionality with improved performance:
-
-- Use `./build-cli.sh` instead of `./build-docker.sh`
-- Use `./server-cli.sh` instead of `./server-docker.sh`
 
 ## Configuration options
 
@@ -240,19 +247,6 @@ In addition to the command line options supplied to `./build-cli.sh` and `./buil
 **osm**: URL of Open Street Map `PBF` data file.
 
 Consult the sample configurations at [Open Site Energy's open data portal](https://data.opensite.energy/group/custom) for examples of all available YML parameters. 
-
-
-## Minimum platform requirements
-
-To run the Open Site Energy build process on both `solar` and `wind`, you will need a computer with the following minimum configuration:
-
-- 12Gb memory
-- 250Gb free hard disk space
-
-## Typical timings
-
-During local (non-Docker) testing on a Mac Arm M3, the `wind` constraints build took approximately 2.5 hours to complete while the `solar` constraints build took upwards of 10 hours to complete. The longer time for `solar` is due to the large number of high-vertex datasets involved - this involves larger downloads and more intensive GIS processing.
-
 
 ## How it works
 
