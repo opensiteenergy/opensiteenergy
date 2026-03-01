@@ -14,6 +14,9 @@ while true
             sudo certbot --nginx --non-interactive --agree-tos --redirect --keep-until-expiring --email info@${DOMAIN} --domains ${DOMAIN} | sudo tee /usr/src/opensiteenergy/log-certbot.txt >/dev/null
             if grep -q 'Successfully deployed certificate' /usr/src/opensiteenergy/log-certbot.txt; then
                 sudo cp /usr/src/opensiteenergy/DOMAIN /usr/src/opensiteenergy/DOMAINACTIVE
+                export TILESERVER_URL="https://${DOMAIN}/tiles/"
+                sudo sed -i "s|.*TILESERVER_URL.*|TILESERVER_URL=${TILESERVER_URL}|" /usr/src/opensiteenergy/.env
+                sudo /usr/bin/systemctl restart opensiteenergy.service
                 sudo /usr/bin/systemctl restart tileserver.service
             fi
             sudo rm /usr/src/opensiteenergy/DOMAIN

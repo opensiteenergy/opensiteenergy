@@ -627,7 +627,7 @@ LEFT JOIN LATERAL (
     def amalgamate(self):
         """
         Amalgamates datasets into one
-        Note: amalgamate is universally applied to all geographical subcomponents even if one subcomponent
+        Note: amalgamate is universally applied to all geographical subcomponents even if there's only one subcomponent
         """
 
         if self.postgis.table_exists(self.node.output):
@@ -704,7 +704,42 @@ LEFT JOIN LATERAL (
                             WHERE grid.id = {gridsquare_id} AND ST_GeometryType(dataset.geom) = 'ST_Polygon' 
                             GROUP BY grid.id
                     """).format(**dbparams)
-                    self.postgis.execute_query(query_union_by_gridsquare)
+
+                    # # Updated Query Logic
+                    # query_union_by_gridsquare = sql.SQL("""
+                    #     INSERT INTO {output} (id, geom)
+                    #     WITH grid_square AS (
+                    #         SELECT id, geom FROM {grid} WHERE id = {gridsquare_id}
+                    #     ),
+                    #     intersecting_parcels AS (
+                    #         SELECT d.geom 
+                    #         FROM {scratch1} d
+                    #         JOIN grid_square g ON ST_Intersects(d.geom, g.geom)
+                    #         WHERE ST_GeometryType(d.geom) = 'ST_Polygon'
+                    #     ),
+                    #     overlap_check AS (
+                    #         SELECT EXISTS (
+                    #             SELECT 1 
+                    #             FROM intersecting_parcels p1, intersecting_parcels p2
+                    #             WHERE p1.ctid < p2.ctid  -- Use ctid to avoid comparing a row to itself
+                    #             AND ST_Intersects(p1.geom, p2.geom)
+                    #             LIMIT 1
+                    #         ) as needs_union
+                    #     )
+                    #     SELECT 
+                    #         (SELECT id FROM grid_square),
+                    #         CASE 
+                    #             WHEN (SELECT needs_union FROM overlap_check) THEN
+                    #                 (ST_Dump(ST_Union(ST_Intersection(g.geom, p.geom)))).geom
+                    #             ELSE
+                    #                 ST_Intersection(g.geom, p.geom)
+                    #         END
+                    #     FROM grid_square g
+                    #     CROSS JOIN intersecting_parcels p
+                    #     CROSS JOIN overlap_check
+                    #     GROUP BY g.id, p.geom, needs_union;
+                    # """).format(**dbparams)
+                    # self.postgis.execute_query(query_union_by_gridsquare)
 
             self.postgis.execute_query(sql.SQL("CREATE INDEX ON {output} USING GIST (geom)").format(**dbparams))
             self.postgis.execute_query(sql.SQL("CREATE INDEX {output_id_index} ON {output} (id)").format(**dbparams))

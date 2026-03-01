@@ -220,7 +220,9 @@ ADMIN_USERNAME=${ADMIN_USERNAME}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
 " >> /usr/src/opensiteenergy/.env
 sudo chown -R www-data:www-data /usr/src/opensiteenergy
-sudo sed -i "s/.*TILESERVER_URL.*/TILESERVER_URL\=\/tiles/" /usr/src/opensiteenergy/.env
+PUBLIC_IP=$(hostname -I | awk '{print $1}')
+export TILESERVER_URL="http://${PUBLIC_IP}/tiles/"
+sudo sed -i "s|.*TILESERVER_URL.*|TILESERVER_URL=${TILESERVER_URL}|" /usr/src/opensiteenergy/.env
 
 echo "[Unit]
 Description=opensiteenergy-servicesmanager.service

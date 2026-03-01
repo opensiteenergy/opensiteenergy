@@ -23,5 +23,5 @@ if [ -f "/usr/src/opensiteenergy/DOMAINACTIVE" ]; then
     export PUBLIC_URL=https://${DOMAIN}/tiles/
 fi
 
-
-xvfb-run --server-args="-screen 0 1024x768x24" tileserver-gl -p 8080 --public_url ${PUBLIC_URL} --config build/tileserver-live/config.json
+cd build/tileserver-live/
+xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24 +extension GLX +render -noreset" tileserver-gl -p 8080 --public_url ${PUBLIC_URL} --config config.json
