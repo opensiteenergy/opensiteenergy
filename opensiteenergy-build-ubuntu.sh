@@ -131,9 +131,11 @@ echo '' >> /usr/src/opensiteenergy/opensiteenergy.log
 echo '********* STAGE 4: Installing Open Site Energy source code **********' >> /usr/src/opensiteenergy/opensiteenergy.log
 
 echo '<!doctype html><html><head><meta http-equiv="refresh" content="2"></head><body><pre>Cloning Open Site Energy GitHub repo...</pre></body></html>' | sudo tee /var/www/html/index.nginx-debian.html
+cp /usr/src/opensiteenergy/opensiteenergy.log /tmp/opensiteenergy.log
 sudo rm -R /usr/src/opensiteenergy
 cd /usr/src
 git clone https://github.com/opensiteenergy/opensiteenergy.git opensiteenergy
+mv /tmp/opensiteenergy.log /usr/src/opensiteenergy/opensiteenergy.log 
 
 echo '********* STAGE 4: Finished installing Open Site Energy source code **********' >> /usr/src/opensiteenergy/opensiteenergy.log
 
