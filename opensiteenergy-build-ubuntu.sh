@@ -354,11 +354,11 @@ pip3 install gdal==`gdal-config --version` | tee -a /usr/src/opensiteenergy/open
 pip3 install -r requirements.txt | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 pip3 install git+https://github.com/hotosm/osm-export-tool-python --no-deps | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo service postgresql restart | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo -u postgres psql -c "CREATE ROLE opensite WITH LOGIN PASSWORD 'password';" | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo -u postgres createdb -O opensite opensite | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo -u postgres psql -d opensite -c 'CREATE EXTENSION postgis;' | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo -u postgres psql -d opensite -c 'CREATE EXTENSION postgis_raster;' | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo -u postgres psql -d opensite -c 'GRANT ALL PRIVILEGES ON DATABASE opensite TO opensite;' | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo -u postgres psql -c "CREATE ROLE ${POSTGRES_USER} WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}';" | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo -u postgres createdb -O ${POSTGRES_USER} ${POSTGRES_DB} | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo -u postgres psql -d opensite -c "CREATE EXTENSION postgis;" | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo -u postgres psql -d opensite -c "CREATE EXTENSION postgis_raster;" | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo -u postgres psql -d opensite -c "GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_USER};" | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 
 echo "[Unit]
 Description=opensiteenergy.service
