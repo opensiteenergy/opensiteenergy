@@ -164,6 +164,12 @@ class OpenSiteConstants:
     TILESERVER_FONTS_GITHUB     = "https://github.com/opensiteenergy/openmaptiles-fonts.git"
     TILESERVER_URL              = os.getenv("TILESERVER_URL", "http://localhost:8080")
 
+    # Tileserver default centre
+    TILESERVER_DEFAULT_CENTRE   = [-2.53, 53.99]
+
+    # Tileserver default zoom
+    TILESERVER_DEFAULT_ZOOM     = 6
+
     # Location of shell script that downloads coastline and landcover data for whole earth
     SHELL_COASTLINE_LANDCOVER   = 'get-coastline-landcover.sh'
 

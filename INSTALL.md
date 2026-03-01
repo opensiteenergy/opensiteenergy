@@ -64,6 +64,7 @@ For Windows platforms, install [`Multipass`](https://canonical.com/multipass/ins
 
 ```
 multipass launch noble --name opensiteenergy --cpus 4 --memory 12G --disk 250G
+multipass shell opensiteenergy 
 ```
 
 ### 1. Initial setup (includes install of GDAL and Open Site Energy Python libraries)

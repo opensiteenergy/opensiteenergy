@@ -23,9 +23,9 @@ RUN apt update; exit 0
 
 # Install chromium browser so selenium can work
 
-RUN apt-get update && apt-get install -y \
-    chromium-browser \
-    chromium-chromedriver
+RUN add-apt-repository -y ppa:xtradeb/apps
+RUN apt-get update
+RUN apt-get install -y chromium chromium-driver
 
 
 # Install tilemaker

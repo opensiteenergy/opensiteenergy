@@ -80,6 +80,8 @@ class OpenSiteOutputWeb(OutputBase):
             opensite_style_json = openmaptiles_style_json
             opensite_style_json['name'] = 'Open Site Energy'
             opensite_style_json['id'] = 'opensiteenergy'
+            opensite_style_json['center'] = OpenSiteConstants.TILESERVER_DEFAULT_CENTRE
+            opensite_style_json['zoom'] = OpenSiteConstants.TILESERVER_DEFAULT_ZOOM
             opensite_style_json['sources']['attribution']['attribution'] += " " + attribution
 
             for branch in self.node.custom_properties['structure']:
@@ -125,6 +127,8 @@ class OpenSiteOutputWeb(OutputBase):
                     {
                         "version":  8,
                         "id":       dataset['dataset'],
+                        "center":   OpenSiteConstants.TILESERVER_DEFAULT_CENTRE,
+                        "zoom":     OpenSiteConstants.TILESERVER_DEFAULT_ZOOM,
                         "name":     dataset['title'],
                         "sources": \
                         {
@@ -146,8 +150,10 @@ class OpenSiteOutputWeb(OutputBase):
                                 "type":         "fill",
                                 "paint":        \
                                 {
-                                    "fill-opacity":     style_opacity,
-                                    "fill-color":       dataset['color']
+                                    "fill-opacity":         style_opacity,
+                                    "fill-color":           dataset['color'],
+                                    "fill-outline-color":   "rgba(0,0,0,0)",
+                                    "fill-antialias":       True
                                 }
                             }
                         ]
@@ -155,7 +161,9 @@ class OpenSiteOutputWeb(OutputBase):
 
                     opensite_layer = style_json['layers'][0]
                     # Temporary workaround as setting 'fill-outline-color'='#FFFFFF00' on individual style breaks WMTS
-                    opensite_layer['paint']['fill-outline-color'] = "#FFFFFF00"
+                    # opensite_layer['paint']['fill-outline-color'] = "#FFFFFF00"
+                    opensite_layer['paint']['fill-outline-color'] = "rgba(0,0,0,0)"
+                    opensite_layer['paint']['fill-antialias'] = True
                     opensite_layer['layout'] = {'visibility': 'visible'}
                     insert_at_index = next(i for i, layer in enumerate(opensite_style_json['layers']) if layer.get('id') == insert_at_node_id)
                     opensite_style_json['layers'].insert(insert_at_index, opensite_layer)
