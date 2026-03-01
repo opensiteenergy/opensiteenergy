@@ -86,7 +86,7 @@ echo '********* STAGE 2: Installing nginx **********' >> /usr/src/opensiteenergy
 mkdir /var/www
 mkdir /var/www/html
 echo '<!doctype html><html><head><meta http-equiv="refresh" content="2"></head><body><pre>Beginning installation of Open Site Energy...</pre></body></html>' | sudo tee /var/www/html/index.nginx-debian.html
-sudo apt install nginx certbot python3-certbot-nginx -y
+sudo apt install nginx certbot python3-certbot-nginx -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 echo "${ADMIN_USERNAME}:$(openssl passwd -6 "${ADMIN_PASSWORD}")" | sudo tee /etc/nginx/.htpasswd > /dev/null
 sudo chown www-data:www-data /etc/nginx/.htpasswd
 sudo chmod 600 /etc/nginx/.htpasswd
@@ -109,7 +109,7 @@ server {
 }
 EOF
 
-sudo nginx -t && sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 
 echo '********* STAGE 2: Finished installing nginx **********' >> /usr/src/opensiteenergy/opensiteenergy.log
 
@@ -134,7 +134,7 @@ echo '<!doctype html><html><head><meta http-equiv="refresh" content="2"></head><
 cp /usr/src/opensiteenergy/opensiteenergy.log /tmp/opensiteenergy.log
 sudo rm -R /usr/src/opensiteenergy
 cd /usr/src
-git clone https://github.com/opensiteenergy/opensiteenergy.git opensiteenergy
+git clone https://github.com/opensiteenergy/opensiteenergy.git opensiteenergy 
 mv /tmp/opensiteenergy.log /usr/src/opensiteenergy/opensiteenergy.log 
 
 echo '********* STAGE 4: Finished installing Open Site Energy source code **********' >> /usr/src/opensiteenergy/opensiteenergy.log
@@ -145,9 +145,9 @@ echo '********* STAGE 5: Installing nodejs and frontail **********' >> /usr/src/
 echo '<!doctype html><html><head><meta http-equiv="refresh" content="2"></head><body><pre>Installing frontail to show install logs dynamically...</pre></body></html>' | sudo tee /var/www/html/index.nginx-debian.html
 
 sudo apt update -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
-sudo apt install curl -y | tee -a /usr/src/opensiteenergy/log.txt
+sudo apt install curl -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt install netcat-traditional nodejs -y | tee -a /usr/src/opensiteenergy/log.txt
+sudo apt install netcat-traditional nodejs -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo npm i frontail -g 2>&1 | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 
 echo "[Unit]

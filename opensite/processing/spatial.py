@@ -739,7 +739,7 @@ LEFT JOIN LATERAL (
                     #     CROSS JOIN overlap_check
                     #     GROUP BY g.id, p.geom, needs_union;
                     # """).format(**dbparams)
-                    # self.postgis.execute_query(query_union_by_gridsquare)
+                    self.postgis.execute_query(query_union_by_gridsquare)
 
             self.postgis.execute_query(sql.SQL("CREATE INDEX ON {output} USING GIST (geom)").format(**dbparams))
             self.postgis.execute_query(sql.SQL("CREATE INDEX {output_id_index} ON {output} (id)").format(**dbparams))
