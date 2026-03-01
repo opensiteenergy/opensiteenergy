@@ -252,9 +252,9 @@ sudo NEEDRESTART_MODE=a apt install qgis qgis-plugin-grass -y | tee -a /usr/src/
 sudo NEEDRESTART_MODE=a apt install screen -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 sudo apt update -y | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 # Install chromium and chromium-driver
-sudo add-apt-repository -y ppa:xtradeb/apps
-sudo apt-get update
-sudo NEEDRESTART_MODE=a apt-get install -y chromium chromium-driver
+sudo add-apt-repository -y ppa:xtradeb/apps | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo apt-get update | tee -a /usr/src/opensiteenergy/opensiteenergy.log
+sudo NEEDRESTART_MODE=a apt-get install -y chromium chromium-driver | tee -a /usr/src/opensiteenergy/opensiteenergy.log
 
 echo '********* STAGE 6: Finished installing general tools and required libraries **********' >> /usr/src/opensiteenergy/opensiteenergy.log
 
