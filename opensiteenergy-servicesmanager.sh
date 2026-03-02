@@ -25,7 +25,6 @@ while true
         if [ -f "/usr/src/opensiteenergy/RESTARTSERVICES" ]; then
             echo "Restarting tileserver.service and apache2 with post-build conf"
             sudo /usr/bin/systemctl restart tileserver.service
-            sudo /usr/bin/systemctl restart opensiteenergy.service
             sudo ln -s /etc/nginx/sites-available/001-opensiteenergy-live.conf /etc/nginx/sites-enabled/
             sudo rm -f /etc/nginx/sites-enabled/002-default-build-pre.conf
             sudo /usr/sbin/nginx -s reload
