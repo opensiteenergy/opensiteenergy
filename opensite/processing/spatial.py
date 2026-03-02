@@ -697,48 +697,49 @@ LEFT JOIN LATERAL (
 
                     dbparams['gridsquare_id'] = sql.Literal(gridsquare_id)
                     
-                    query_union_by_gridsquare = sql.SQL("""
-                        INSERT INTO {output} (id, geom)
-                            SELECT grid.id, (ST_Dump(ST_Union(ST_Intersection(grid.geom, dataset.geom)))).geom FROM {grid} grid
-                            INNER JOIN {scratch1} dataset ON ST_Intersects(grid.geom, dataset.geom)
-                            WHERE grid.id = {gridsquare_id} AND ST_GeometryType(dataset.geom) = 'ST_Polygon' 
-                            GROUP BY grid.id
-                    """).format(**dbparams)
-
-                    # # Updated Query Logic
                     # query_union_by_gridsquare = sql.SQL("""
                     #     INSERT INTO {output} (id, geom)
-                    #     WITH grid_square AS (
-                    #         SELECT id, geom FROM {grid} WHERE id = {gridsquare_id}
-                    #     ),
-                    #     intersecting_parcels AS (
-                    #         SELECT d.geom 
-                    #         FROM {scratch1} d
-                    #         JOIN grid_square g ON ST_Intersects(d.geom, g.geom)
-                    #         WHERE ST_GeometryType(d.geom) = 'ST_Polygon'
-                    #     ),
-                    #     overlap_check AS (
-                    #         SELECT EXISTS (
-                    #             SELECT 1 
-                    #             FROM intersecting_parcels p1, intersecting_parcels p2
-                    #             WHERE p1.ctid < p2.ctid  -- Use ctid to avoid comparing a row to itself
-                    #             AND ST_Intersects(p1.geom, p2.geom)
-                    #             LIMIT 1
-                    #         ) as needs_union
-                    #     )
-                    #     SELECT 
-                    #         (SELECT id FROM grid_square),
-                    #         CASE 
-                    #             WHEN (SELECT needs_union FROM overlap_check) THEN
-                    #                 (ST_Dump(ST_Union(ST_Intersection(g.geom, p.geom)))).geom
-                    #             ELSE
-                    #                 ST_Intersection(g.geom, p.geom)
-                    #         END
-                    #     FROM grid_square g
-                    #     CROSS JOIN intersecting_parcels p
-                    #     CROSS JOIN overlap_check
-                    #     GROUP BY g.id, p.geom, needs_union;
+                    #         SELECT grid.id, (ST_Dump(ST_Union(ST_Intersection(grid.geom, dataset.geom)))).geom FROM {grid} grid
+                    #         INNER JOIN {scratch1} dataset ON ST_Intersects(grid.geom, dataset.geom)
+                    #         WHERE grid.id = {gridsquare_id} AND ST_GeometryType(dataset.geom) = 'ST_Polygon' 
+                    #         GROUP BY grid.id
                     # """).format(**dbparams)
+
+                    # Updated Query Logic
+                    query_union_by_gridsquare = sql.SQL("""
+                    INSERT INTO {output} (id, geom)
+                    WITH target_parcels AS (
+                        SELECT ctid, geom 
+                        FROM {scratch1} 
+                        WHERE id = {gridsquare_id} 
+                        AND ST_GeometryType(geom) = 'ST_Polygon'
+                    ),
+                    overlap_check AS (
+                        SELECT EXISTS (
+                            SELECT 1 
+                            FROM target_parcels p1
+                            JOIN target_parcels p2 ON p1.ctid < p2.ctid
+                            WHERE p1.geom && p2.geom 
+                            AND ST_Intersects(p1.geom, p2.geom)
+                            LIMIT 1
+                        ) as needs_union
+                    )
+                    SELECT 
+                        {gridsquare_id} as id,
+                        final_shapes.geom
+                    FROM overlap_check oc
+                    CROSS JOIN LATERAL (
+                        SELECT (ST_Dump(ST_Union(p.geom))).geom
+                        FROM target_parcels p
+                        WHERE oc.needs_union
+                        
+                        UNION ALL
+                        
+                        SELECT p.geom
+                        FROM target_parcels p
+                        WHERE NOT oc.needs_union
+                    ) AS final_shapes;
+                    """).format(**dbparams)
                     self.postgis.execute_query(query_union_by_gridsquare)
 
             self.postgis.execute_query(sql.SQL("CREATE INDEX ON {output} USING GIST (geom)").format(**dbparams))

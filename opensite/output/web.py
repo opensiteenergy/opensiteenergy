@@ -73,6 +73,8 @@ class OpenSiteOutputWeb(OutputBase):
             openmaptiles_style_json = json.load(open(openmaptiles_style_file_src, 'r', encoding='utf-8'))
             openmaptiles_style_json['sources']['openmaptiles']['url'] = OpenSiteConstants.TILESERVER_URL + "/data/openmaptiles.json"
             openmaptiles_style_json['glyphs'] = fonts_url
+            openmaptiles_style_json['center'] = OpenSiteConstants.TILESERVER_DEFAULT_CENTRE
+            openmaptiles_style_json['zoom'] = OpenSiteConstants.TILESERVER_DEFAULT_ZOOM
             json.dump(openmaptiles_style_json, open(openmaptiles_style_file_dst, 'w', encoding='utf-8'), indent=4)
 
             first_branch_ckan = self.node.custom_properties['structure'][0]['ckan']
