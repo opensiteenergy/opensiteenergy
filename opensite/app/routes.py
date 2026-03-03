@@ -504,7 +504,7 @@ def zip_worker(request: Request, session_id: str, zip_suffix: str, extension_fil
             files_to_process.append((qgis_file, qgis_file.name))
         for f in folder.iterdir():
             if f.is_file() and f.suffix == '.gpkg':
-                files_to_process.append((f, f"output/{f.name}"))
+                files_to_process.append((f, f"layers/{f.name}"))
     else:
         for f in folder.iterdir():
             if f.is_file():
@@ -545,7 +545,7 @@ async def files_page(request: Request):
         # Using a simple list comprehension with pathlib
         files_list = [
             {'name': f.name, 'url': f'/outputfiles/{f.name}'} 
-            for f in OpenSiteConstants.OUTPUT_LAYERS_FOLDER.iterdir() if f.is_file()
+            for f in OpenSiteConstants.OUTPUT_LAYERS_FOLDER.iterdir() if (f.is_file() and not f.name.startswith('.'))
         ]
 
     qgis_file = get_qgis_path()
