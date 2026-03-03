@@ -1,9 +1,18 @@
+import resource
+import platform
 import sys
 import os
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from os.path import isfile, basename
+
+# We can only set these environment variables now as setting them
+# in original .env file caused problems with ogr2ogr in main script
+
+if 'QGIS_PROJ_DATA' in os.environ: os.environ['PROJ_DATA'] = os.environ['QGIS_PROJ_DATA']
+if 'QGIS_PROJ_LIB' in os.environ: os.environ['PROJ_LIB'] = os.environ['QGIS_PROJ_LIB']
+
 from qgis.core import (\
     QgsProject, 
     QgsVectorLayer, 
@@ -27,16 +36,16 @@ if 'QGIS_PREFIX_PATH' in os.environ: QGIS_PREFIX_PATH = os.environ['QGIS_PREFIX_
 QGIS_OUTPUT_FILE = BUILD_FOLDER / "output" / "opensiteenergy.qgs"
 if len(sys.argv) > 1: QGIS_OUTPUT_FILE = Path(sys.argv[1])
 
-
-# We can only set these environment variables now as setting them
-# in original .env file caused problems with ogr2ogr in main script
-
-if 'QGIS_PROJ_DATA' in os.environ: os.environ['PROJ_DATA'] = os.environ['QGIS_PROJ_DATA']
-if 'QGIS_PROJ_LIB' in os.environ: os.environ['PROJ_LIB'] = os.environ['QGIS_PROJ_LIB']
-
-
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 os.environ['XDG_RUNTIME_DIR'] = '/tmp/runtime-root'
+
+try:
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    target = min(4096, hard)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+    print(f"[{platform.system()}] File limit set to {target}")
+except Exception as e:
+    print(f"Could not adjust ulimit: {e}")
 
 QGIS_PARENT_OPACITY             = 0.7
 QGIS_CHILD_OPACITY              = 0.4
@@ -324,7 +333,16 @@ def createQGISFile():
             if color is None: 
                 color = convertCSSColor2RGB('grey')
 
-            layer = QgsVectorLayer(str(layers_folder / f"{section['dataset']}.gpkg"), section['title'])
+            layer_path = str(layers_folder / f"{section['dataset']}.gpkg")
+            layer = QgsVectorLayer(layer_path, section['title'])
+
+            if not layer.isValid():
+                print(f"ERROR: Layer failed to load: {layer_path}")
+                # Optional: check if file actually exists to rule out path issues
+                if not os.path.exists(layer_path):
+                    print(f"File does not exist at that path.")
+                continue # Skip this layer and move to the next one instead of crashing
+
             layer.setName(section['title'])
             layer.renderer().symbol().setOpacity(QGIS_PARENT_OPACITY)
             layer.renderer().symbol().setColor(QColor.fromRgb(color[0], color[1], color[2]))
