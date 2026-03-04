@@ -294,12 +294,12 @@ ExecStart=/usr/src/opensiteenergy/server-tileserver.sh
 Restart=on-failure
 Environment=PORT=8080
 Environment=NODE_ENV=production
+StandardOutput=append:/var/log/tileserver.log
+StandardError=append:/var/log/tileserver.log
 
 [Install]
 WantedBy=multi-user.target
 
-StandardOutput=file:/var/log/tileserver-output.log
-StandardError=file:/var/log/tileserver-error.log
 "  | sudo tee /etc/systemd/system/tileserver.service >/dev/null
 
 sudo /usr/bin/systemctl enable tileserver.service

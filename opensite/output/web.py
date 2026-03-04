@@ -71,7 +71,7 @@ class OpenSiteOutputWeb(OutputBase):
             openmaptiles_style_file_src = str(OpenSiteConstants.TILESERVER_FOLDER_SRC / 'openmaptiles.json')
             openmaptiles_style_file_dst = str(OpenSiteConstants.TILESERVER_STYLES_FOLDER / 'openmaptiles.json')
             openmaptiles_style_json = json.load(open(openmaptiles_style_file_src, 'r', encoding='utf-8'))
-            openmaptiles_style_json['sources']['openmaptiles']['url'] = OpenSiteConstants.TILESERVER_URL + "/data/openmaptiles.json"
+            openmaptiles_style_json['sources']['openmaptiles']['url'] = "mbtiles://openmaptiles"
             openmaptiles_style_json['glyphs'] = fonts_url
             openmaptiles_style_json['center'] = OpenSiteConstants.TILESERVER_DEFAULT_CENTRE
             openmaptiles_style_json['zoom'] = OpenSiteConstants.TILESERVER_DEFAULT_ZOOM
@@ -138,7 +138,7 @@ class OpenSiteOutputWeb(OutputBase):
                             {
                                 "type":         "vector",
                                 "buffer":       512,
-                                "url":          OpenSiteConstants.TILESERVER_URL + f"/data/{dataset['dataset']}.json",
+                                "url":          f"mbtiles://{dataset['dataset']}",
                                 "attribution":  attribution
                             }
                         },
