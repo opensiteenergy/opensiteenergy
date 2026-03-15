@@ -473,6 +473,33 @@ async def route_build_stop(request: Request):
 
     return RedirectResponse(url="/build", status_code=HTTP_303_SEE_OTHER)
 
+# **********************************************************
+# ****************** Analysis functions ********************
+# **********************************************************
+
+@OpenSiteRouter.get("/analysis", response_class=HTMLResponse)
+async def analysis_page(request: Request):
+    """
+    Renders view analysis page
+    """
+    if not request.session.get('logged_in', False):
+        return RedirectResponse(url="/login", status_code=303)
+
+    files_list = []
+    
+    if OpenSiteConstants.ANALYSE_FOLDER.is_dir():
+        # Using a simple list comprehension with pathlib
+        files_list = [str(OpenSiteConstants.ANALYSE_FOLDER / f) for f in OpenSiteConstants.ANALYSE_FOLDER.iterdir() if (f.is_file() and not f.name.startswith('.'))]
+
+    analyses = []
+    for file in files_list:
+        analyses.append(json.load(open(file)))
+
+    return request.app.state.templates.TemplateResponse(
+        "analysis.html", 
+        {"request": request, "analyses": analyses}
+    )
+
 
 # **********************************************************
 # *************** Download files functions *****************

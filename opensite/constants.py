@@ -132,6 +132,7 @@ class OpenSiteConstants:
     CONFIGS_FOLDER              = BUILD_ROOT / 'configs'
     BUILD_CONFIG                = CONFIGS_FOLDER / f"{OPENSITEENERGY_SHORTNAME}.json"
     DOWNLOAD_FOLDER             = BUILD_ROOT / "downloads"
+    ANALYSE_FOLDER              = BUILD_ROOT / "analyse"
     OSM_DOWNLOAD_FOLDER         = DOWNLOAD_FOLDER / OSM_SUBFOLDER
     OPENLIBRARY_DOWNLOAD_FOLDER = DOWNLOAD_FOLDER / OPENLIBRARY_SUBFOLDER
     CACHE_FOLDER                = BUILD_ROOT / "cache"
@@ -267,6 +268,7 @@ class OpenSiteConstants:
                                 [
                                     BUILD_ROOT,
                                     DOWNLOAD_FOLDER,
+                                    ANALYSE_FOLDER,
                                     OSM_DOWNLOAD_FOLDER,
                                     OPENLIBRARY_DOWNLOAD_FOLDER,
                                     CACHE_FOLDER,

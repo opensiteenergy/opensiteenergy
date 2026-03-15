@@ -91,6 +91,7 @@ class OpenSiteGraph(Graph):
                 'concatenate'
             ],
             "cpu_bound": [
+                'analyse',
                 'run', 
                 'import',
                 'invert',
@@ -401,7 +402,8 @@ class OpenSiteGraph(Graph):
         # 3. Get math context FROM the branch properties we just set
         context = self.get_math_context(branch)
         
-        # 4. Locate structure/style/buffer roots
+        # 4. Locate analyse/structure/style/buffer roots
+        analyse_root = self.find_child(branch, "analyse")
         struct_root = self.find_child(branch, "structure")
         style_root = self.find_child(branch, "style")
         buffer_root = self.find_child(branch, "buffers")
@@ -418,6 +420,11 @@ class OpenSiteGraph(Graph):
             category_node.node_type = 'group'
             category_node.action = 'amalgamate'
 
+            if analyse_root:
+                category_node.action = 'analyse'
+                category_node.title = 'Analyse collection'
+                category_node.custom_properties['analyse'] = [child.name for child in analyse_root.children]
+
             # Apply Style
             if style_root:
                 style_match = self.find_child(style_root, category_node.name)
@@ -432,6 +439,11 @@ class OpenSiteGraph(Graph):
                 dataset_node.node_type = "source"
                 if '--' in dataset_node.name:
                     dataset_node.custom_properties['parent'] = dataset_node.name.split("--")[0]
+
+                # If 'analyse' is set, add all analysis items to custom properties and apply small buffer to ensure all lines become polygons
+                if analyse_root:
+                    dataset_node.database_action = "buffer"
+                    dataset_node.custom_properties['buffer'] = 0.1
 
                 if buffer_root:
                     buf_node = self.find_child(buffer_root, dataset_node.name)
@@ -448,6 +460,11 @@ class OpenSiteGraph(Graph):
                         dataset_node.database_action = "distance"
                         # Math resolution uses the branch-specific context
                         dataset_node.custom_properties['distance'] = self.resolve_math(val, context)
+
+        if analyse_root:
+            for analyse_node in analyse_root.children:
+                analyse_node.custom_properties['analyse'] = True
+                category_node.children.append(analyse_node)
 
         # 6. Sibling Cleanup
         # Deletes all original YAML nodes (tip-height, title, style, etc.)
@@ -596,8 +613,11 @@ class OpenSiteGraph(Graph):
         # Calculate final amalgamation children outputs
         self.compute_amalgamation_outputs()
 
-        # # Generate output nodes
+        # Generate output nodes
         self.add_outputs()
+
+        # Generate analyse parameters
+        self.add_analyse()
 
         # Generate OSM boundaries file if necessary
         self.add_osmboundaries()
@@ -630,6 +650,8 @@ class OpenSiteGraph(Graph):
         for branch in top_branches:
             if any(child.name == 'all-layers' for child in branch.children):
                 continue
+
+            if self.is_analyse_branch(branch): continue
 
             self.log.info(f"Inserting 'all-layers' overall amalgamation for branch: {branch.name}")
 
@@ -1035,6 +1057,13 @@ class OpenSiteGraph(Graph):
 
         self.log.debug(f"Successfully wrapped {len(target_nodes)} nodes with buffer or distance processes.")
 
+    def is_analyse_branch(self, branch):
+        """
+        Gets boolean on whether branch is an analyse branch
+        """
+
+        return ('analyse' in branch.custom_properties['yml'])
+
     def add_inversions(self):
         """
         Inserts invert node above final amalgamated node of each branch
@@ -1049,7 +1078,9 @@ class OpenSiteGraph(Graph):
         ]
 
         for node in target_nodes:
-                        
+
+            if self.is_analyse_branch(node): continue
+
             # We assume branch node has only one child 
             child_node = node.children[0]
             inverted_node = self.create_node(
@@ -1079,6 +1110,9 @@ class OpenSiteGraph(Graph):
             import_node = self.find_node_by_urn(d['urn'])
             if not import_node: continue
 
+            # Check whether analyse node - if so, don't preprocess as we're not doing amalgamation or output
+            if import_node.custom_properties.get('analyse', False): continue
+
             # Identify target to "wrap" - check immediate parent to see if buffer/distance has already 'claimed' import
             parent = self.find_parent(import_node.urn)
             if parent and ((getattr(parent, 'action', None) == 'buffer') or (getattr(parent, 'action', None) == 'distance')): target_node = parent
@@ -1102,11 +1136,46 @@ class OpenSiteGraph(Graph):
 
         self.log.info("Preprocess nodes injected with status 'unprocessed'.")
 
+    def add_analyse(self):
+        """
+        Adds any additional analyse parameters for analyse branches
+        """
+
+        # Identify existing main branches (children of root)
+        current_branches = list(self.root.children)
+        
+        for branch_node in current_branches:
+
+            # Don't do anything for non-analyse branches
+            if not self.is_analyse_branch(branch_node): continue
+
+            analyse_collection = branch_node.children[0]
+            analyse_targets = []
+            analyse_datasets = []
+
+            self.log.info(f"Adding analyse datasets to branch {branch_node.name}")
+
+            collection_children = analyse_collection.children
+            for child in collection_children:
+                if 'analyse' in child.custom_properties:
+                    if child.custom_properties['analyse']: 
+                        analyse_targets.append({'name': child.name, 'title': child.title, 'output': child.output})
+                        continue
+
+                analyse_datasets.append({'name': child.name, 'title': child.title, 'output': child.output})
+
+            if 'percentile' in branch_node.custom_properties['yml']:
+                analyse_collection.custom_properties['percentile'] = branch_node.custom_properties['yml']['percentile']
+            analyse_collection.custom_properties['title'] = branch_node.title
+            analyse_collection.custom_properties['analyse'] = analyse_targets
+            analyse_collection.custom_properties['datasets'] = analyse_datasets
+            analyse_collection.output = f"{analyse_collection.custom_properties['branch']}.json"
+
     def add_outputs(self):
         """
         Synthesizes output branches as independent siblings to data branches.
         """
-
+        
         # 1. Prepare format lists
         formats = self.outputformats.copy()
         if 'gpkg' in formats:
@@ -1124,6 +1193,9 @@ class OpenSiteGraph(Graph):
         global_branch_custom_properties = {"structure": self.get_structure(current_branches)}
 
         for branch_node in current_branches:
+
+            # Don't create outputs if 'analyse' branch
+            if self.is_analyse_branch(branch_node): continue
 
             branch_code = branch_node.name
 

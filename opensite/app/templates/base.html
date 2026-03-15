@@ -30,6 +30,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -326,6 +327,15 @@
 
             <!-- Nav Item -->
             <li class="nav-item">
+                <a class="nav-link" href="/analysis"
+                    aria-expanded="true">
+                    <i class="fa fa-fw fa-bar-chart"></i>
+                    <span>Analysis</span>
+                </a>
+            </li>
+
+            <!-- Nav Item -->
+            <li class="nav-item">
                 <a class="nav-link" href="/files"
                     aria-expanded="true">
                     <i class="fas fa-fw fa-download"></i>
@@ -499,16 +509,6 @@
         $(document).ready(function() {
             $('#dataTable').DataTable();
         });
-
-        document.querySelector("#button-commandline-copy").onclick = function(){
-            document.querySelector("#textarea-commandline").select();
-            document.execCommand('copy');
-        };
-
-        document.querySelector("#button-commandline-copy").onclick = function(){
-            document.querySelector("#textarea-commandline").select();
-            document.execCommand('copy');
-        };
 
     </script>
 

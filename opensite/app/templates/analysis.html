@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}
+Analysis
+{% endblock title %}
+
+{% block headline %}
+Analysis
+{% endblock headline %}
+
+{% block content %}
+
+<script src="{{ url_for('static', path='js/browser@4.min.js') }}"></script>
+
+<style>
+    .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out, padding 0.3s ease;
+    }
+    .expanded .collapsible-content {
+        max-height: 2000px; /* Large enough for content */
+        padding-bottom: 1.5rem;
+    }
+    .rotate-icon {
+        transition: transform 0.3s ease;
+        transform: rotate(-90deg);
+    }
+    .expanded .rotate-icon {
+        transform: rotate(0deg);
+    }
+</style>
+
+<div class="max-w-4xl mx-auto">
+
+    <div id="results-container" class="space-y-4">
+    </div>
+</div>
+
+<script>
+    const resultsData = {{ analyses | tojson }};
+
+    function createResultCard(item) {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md';
+        
+        // Header / Toggle Button
+        const header = document.createElement('button');
+        header.className = 'w-full flex items-center justify-between p-3 text-left focus:outline-none';
+        header.innerHTML = `
+            <div class="flex flex-col items-start text-left">
+                <span class="text-lg font-semibold text-slate-800">
+                    ${item.title}
+                </span>
+            </div>
+            <svg class="rotate-icon w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        `;
+
+//         header.innerHTML = `
+// <div class="relative  text-left p-2">
+    
+//     <div class="flex flex-col items-start pr-8"> <!-- pr-8 leaves room for the caret -->
+//         <span class="text-lg font-semibold text-slate-800 leading-none">
+//             ${item.title}
+//         </span>
+//         <span class="block text-sm text-slate-400 font-medium uppercase mt-1">
+//             Percentile: ${item.percentile}
+//         </span>
+//     </div>
+
+    
+// </div>
+//         `;
+        header.onclick = () => {
+            card.classList.toggle('expanded');
+        };
+
+        // Content Container
+        const content = document.createElement('div');
+        content.className = 'collapsible-content px-3';
+
+        // Generate tables for each section in "readable"
+        let readableHtml = '<div class="space-y-6 mt-0">';
+
+        if (parseFloat(item.percentile) != 0) {
+            readableHtml += `<div>Excluding lower <b>${item.percentile}%</b> percentile of sites</div>`;
+        } 
+
+        for (const [sectionName, metrics] of Object.entries(item.readable)) {
+            readableHtml += `
+                <div class="section">
+                    <p class="text-md font-bold mb-2 text-slate-800 flex items-center">
+                        ${sectionName}
+                    </p>
+                    <div class="overflow-x-auto rounded-lg border border-slate-100">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-600 uppercase text-xs font-bold">
+                                <tr>
+                                    <th class="px-2 py-2">Feature</th>
+                                    <th class="px-2 py-2 text-right">Distance (m)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${Object.entries(metrics).map(([key, val]) => `
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-2 py-2 text-slate-700">${key}</td>
+                                        <td class="px-2 py-2 text-right font-mono font-medium">${val.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        readableHtml += '</div>';
+        content.innerHTML = readableHtml;
+
+        card.appendChild(header);
+        card.appendChild(content);
+        return card;
+    }
+
+    // Initialize display
+    window.onload = () => {
+        const container = document.getElementById('results-container');
+        resultsData.forEach(result => {
+            container.appendChild(createResultCard(result));
+        });
+    };
+</script>
+
+{% endblock content %}

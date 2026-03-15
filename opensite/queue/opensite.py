@@ -17,6 +17,7 @@ from opensite.install.opensite import OpenSiteInstaller
 from opensite.download.opensite import OpenSiteDownloader
 from opensite.processing.unzip import OpenSiteUnzipper
 from opensite.processing.concatenate import OpenSiteConcatenator
+from opensite.processing.analyse import OpenSiteAnalyse
 from opensite.processing.run import OpenSiteRunner
 from opensite.processing.importer import OpenSiteImporter
 from opensite.processing.spatial import OpenSiteSpatial
@@ -226,6 +227,10 @@ class OpenSiteQueue:
                         custom_properties=custom_properties)
 
         try:
+
+            if action == 'analyse':
+                runner = OpenSiteAnalyse(node, log_level, shared_lock, shared_metadata)
+                success = runner.run()
 
             if action == 'run':
                 runner = OpenSiteRunner(node, log_level, shared_lock, shared_metadata)
