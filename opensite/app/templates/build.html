@@ -292,13 +292,13 @@ createApp({
                         // Find the actual resource URL for the YAML file
                         const ymlResource = pkg.resources ? pkg.resources.find(r => r.format === OPEN_SITE_ENERGY_YML) : null;
 
-                        if (group.name.includes('custom') || group.title === 'Custom configurations') {
+                        if (group.name.includes('custom') || group.title === 'Custom configurations' || group.title === 'Buffer Analysis') {
                             if (ymlResource && ymlResource.url) {
                                 // Swap out the ID logic: the "id" of this config entry is now the URL itself
                                 configs.push({
                                     title: pkg.title || pkg.name,
                                     value: ymlResource.url, // This will be the value in your popup
-                                    name: pkg.name
+                                    name: pkg.title
                                 });
                             }
                         } else {

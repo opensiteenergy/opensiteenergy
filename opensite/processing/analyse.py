@@ -98,7 +98,6 @@ class OpenSiteAnalyse(ProcessBase):
                 try:
                     self.log.info(f"Computing minimum distance between '{analyse_dataset['title']}' and '{comparison_dataset_dict['title']}'")
                     results = self.postgis.fetch_all(distance_query.format(**dbparams))
-                    print(results)
                 except Error as e:
                     self.log.error(f"[analyse] PostGIS Error: {e}")
                     return False
@@ -107,7 +106,13 @@ class OpenSiteAnalyse(ProcessBase):
                     return False
             
                 output_data['readable'][analyse_dataset['title']][comparison_dataset_dict['title']] = results[0]['minimum_distance']
-                output_data['raw'].append({'analyse': analyse_dataset['output'], 'comparison': comparison_dataset_dict['output'], 'minimum_distance': results[0]['minimum_distance']})
+                output_data['raw'].append({\
+                    'analyse': analyse_dataset['output'], 
+                    'analyse_fid': results[0]['analyse_fid'], 
+                    'comparison': comparison_dataset_dict['output'], 
+                    'comparison_fid': results[0]['comparison_fid'], 
+                    'minimum_distance': results[0]['minimum_distance']\
+                })
 
         json.dump(output_data, open(output_file, "w"), indent=4)
 

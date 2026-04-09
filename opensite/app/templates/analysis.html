@@ -19,7 +19,7 @@ Analysis
         transition: max-height 0.3s ease-out, padding 0.3s ease;
     }
     .expanded .collapsible-content {
-        max-height: 2000px; /* Large enough for content */
+        max-height: 40000px; /* Large enough for content */
         padding-bottom: 1.5rem;
     }
     .rotate-icon {
@@ -42,7 +42,7 @@ Analysis
 
     function createResultCard(item) {
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md';
+        card.className = 'bg-white mb-3 rounded-md border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md';
         
         // Header / Toggle Button
         const header = document.createElement('button');
@@ -58,21 +58,6 @@ Analysis
             </svg>
         `;
 
-//         header.innerHTML = `
-// <div class="relative  text-left p-2">
-    
-//     <div class="flex flex-col items-start pr-8"> <!-- pr-8 leaves room for the caret -->
-//         <span class="text-lg font-semibold text-slate-800 leading-none">
-//             ${item.title}
-//         </span>
-//         <span class="block text-sm text-slate-400 font-medium uppercase mt-1">
-//             Percentile: ${item.percentile}
-//         </span>
-//     </div>
-
-    
-// </div>
-//         `;
         header.onclick = () => {
             card.classList.toggle('expanded');
         };
@@ -82,11 +67,13 @@ Analysis
         content.className = 'collapsible-content px-3';
 
         // Generate tables for each section in "readable"
-        let readableHtml = '<div class="space-y-6 mt-0">';
+        let readableHtml = '<div class="space-y-2 mt-1">';
 
         if (parseFloat(item.percentile) != 0) {
-            readableHtml += `<div>Excluding lower <b>${item.percentile}%</b> percentile of sites</div>`;
+            readableHtml += `<div>Excluding lower ${100 * item.percentile}% of sites - <b>${100 * (1 - item.percentile)}%</b> of sites satisfy distance from each constraint below.</div>`;
         } 
+
+        readableHtml += '<div class="space-y-2 mb-4">If <b>distance = 0</b>, constraint not satisfied in at least one real project - can potentially ignore/remove constraint.</div>';
 
         for (const [sectionName, metrics] of Object.entries(item.readable)) {
             readableHtml += `

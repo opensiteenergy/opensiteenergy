@@ -1062,6 +1062,7 @@ class OpenSiteGraph(Graph):
         Gets boolean on whether branch is an analyse branch
         """
 
+        if 'yml' not in branch.custom_properties: return False
         return ('analyse' in branch.custom_properties['yml'])
 
     def add_inversions(self):
